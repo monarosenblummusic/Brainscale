@@ -7,6 +7,7 @@ import { GAME_BY_ID } from "@/lib/games";
 import {
   MODALITY_LABEL,
   NBACK_DEFAULTS,
+  chanceFloor,
   isTarget,
   modeLabel,
   nbackEngine,
@@ -169,25 +170,59 @@ export function NBackPlay() {
           ? `Dropping back to ${r.nextLevel}-back`
           : `Holding at ${r.nextLevel}-back`;
 
+    const policy = POLICIES[config.policy];
+    const caught = r.perModality.reduce((sum, p) => sum + p.score.hits, 0);
+    const totalTargets = r.perModality.reduce((sum, p) => sum + p.score.targets, 0);
+    const falseAlarms = r.perModality.reduce((sum, p) => sum + p.score.falseAlarms, 0);
+    const floor = chanceFloor(state, config.policy);
+
     return (
       <PlayFrame>
         <Hud game={GAME} level={modeLabel(config)} />
         <ResultScreen
           game={GAME}
-          headline={`${Math.round(r.accuracy * 100)}%`}
-          sublabel={POLICIES[config.policy].id === "jaeggi" ? "weakest modality" : "average accuracy"}
+          // The headline is the raw count, not the percentage. A block where
+          // you catch almost nothing can still score 70% under a rule that
+          // credits correct non-responses, and "70%" reads like a pass mark —
+          // "1 / 24 caught" cannot be misread.
+          headline={`${caught} / ${totalTargets}`}
+          sublabel={`targets caught${falseAlarms > 0 ? ` · ${falseAlarms} false alarm${falseAlarms === 1 ? "" : "s"}` : ""}`}
           verdict={{ text: verdictText, tone: r.direction }}
           rows={[
             { label: "Level played", value: `${config.n}-back` },
             ...r.perModality.map((p) => ({
               label: MODALITY_LABEL[p.modality],
-              value: `${Math.round(p.accuracy * 100)}%  ·  ${p.score.hits}/${p.score.targets} hits, ${p.score.falseAlarms} false`,
-              tone: (p.accuracy >= 0.9 ? "good" : p.accuracy < 0.7 ? "bad" : "default") as "good" | "bad" | "default",
+              value: `${p.score.hits}/${p.score.targets} caught · ${p.score.falseAlarms} false · ${Math.round(p.accuracy * 100)}%`,
+              tone: (p.accuracy >= policy.up ? "good" : p.accuracy < policy.down ? "bad" : "default") as
+                | "good"
+                | "bad"
+                | "default",
             })),
+            {
+              label: `Block score (${policy.scoreLabel})`,
+              value: `${Math.round(r.accuracy * 100)}%`,
+              tone: (r.direction === "up" ? "good" : r.direction === "down" ? "bad" : "default") as
+                | "good"
+                | "bad"
+                | "default",
+            },
             { label: "Trials", value: String(trialCount) },
-            { label: "Training mode", value: POLICIES[config.policy].name },
+            { label: "Training mode", value: policy.name },
           ]}
           onAgain={again}
+          extra={
+            // Only worth saying when it actually happened: under a rule that
+            // credits correct non-responses, a block can score in the seventies
+            // while being worse than not playing at all.
+            floor > 0 && r.accuracy <= floor ? (
+              <p className="mt-5 rounded-xl bg-[var(--bg-subtle)] px-4 py-3 text-[13px] leading-relaxed text-[var(--text-muted)]">
+                {policy.name} mode credits correct non-responses, so not pressing anything at all would have
+                scored <span className="tnum font-medium">{Math.round(floor * 100)}%</span>. Switch to{" "}
+                <span className="font-medium text-[var(--text)]">Brain Workshop</span> mode in settings for a
+                score that counts only the targets you catch and starts from zero.
+              </p>
+            ) : null
+          }
         />
       </PlayFrame>
     );

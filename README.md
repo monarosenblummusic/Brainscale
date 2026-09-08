@@ -26,8 +26,20 @@ difficulty to how you actually perform.
 
 - **N-Back** — position, audio, colour and shape channels; single through quad modes. Blocks are `20 + n²`
   trials (Brain Workshop's formula, which reproduces the 84 trials at 8-back that BrainScale reports).
-  Selectable adaptive policies: Standard (90% up / 70% down), Jaeggi (90/75, scored on your weakest
-  modality), Brain Workshop (80/50 with a three-block floor), or Manual.
+  Selectable adaptive policies, each paired with the scoring rule it was written for — the rule matters,
+  because it decides where the "did nothing at all" baseline sits:
+
+  | Policy | Formula | Aggregation | Thresholds | Floor |
+  | --- | --- | --- | --- | --- |
+  | Standard | `(TP + TN) / all trials` | mean of modalities | 90 up / 70 down | ~75% |
+  | Jaeggi | `(TP + TN) / all trials` | weakest modality | 90 up / 75 down | ~75% |
+  | Brain Workshop | `TP / (TP + FP + FN)` | pooled | 80 up / 50 down ×3 | 0% |
+  | Manual | `TP / (TP + FP + FN)` | pooled | never moves | 0% |
+
+  Under the first two, correct non-responses count — so ignoring a block entirely still scores about 75%,
+  and the results screen says so when a block lands at or below that. Brain Workshop mode scores only the
+  targets you catch. Either way the results screen leads with the raw count (`1 / 24 targets caught · 4
+  false alarms`), which is the same number under every rule.
 - **CWM** — 8×8 symmetry judgement interleaved with a 4×4 cell to remember, 650 ms highlight / 500 ms blank,
   promoting after two consecutive perfect blocks.
 - **PASAT** — the standard 3.0 / 2.4 / 2.0 / 1.6 s ISI ladder over 61 digits.
@@ -45,7 +57,7 @@ npm run dev          # http://localhost:3000
 npm run build        # production build
 npm run typecheck    # tsc --noEmit
 npm run lint         # eslint
-npm test             # 142 engine unit tests (vitest)
+npm test             # 145 engine unit tests (vitest)
 npm run e2e          # 23 browser smoke tests (playwright)
 ```
 

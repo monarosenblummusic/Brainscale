@@ -219,9 +219,13 @@ export function ResultScreen({
             {game.name} · complete
           </p>
 
-          <div className="mt-3 flex items-baseline gap-3">
-            <span className="tnum text-[44px] font-semibold leading-none tracking-tight">{headline}</span>
-            <span className="text-[15px] text-[var(--text-muted)]">{sublabel}</span>
+          {/* Wraps as a unit: the headline never breaks mid-number, and the
+              sublabel drops to its own line rather than squeezing beside it. */}
+          <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <span className="tnum whitespace-nowrap text-[clamp(2rem,11vw,2.75rem)] font-semibold leading-none tracking-tight">
+              {headline}
+            </span>
+            <span className="text-[15px] leading-snug text-[var(--text-muted)]">{sublabel}</span>
           </div>
 
           {verdict ? (
