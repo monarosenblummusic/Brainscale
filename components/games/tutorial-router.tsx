@@ -9,6 +9,8 @@ const TUTORIALS: Partial<Record<GameId, React.ComponentType>> = {
   "n-back": dynamic(() => import("@/components/games/nback-tutorial").then((m) => m.NBackTutorial), { loading }),
   "memory-span": dynamic(() => import("@/components/games/generic-tutorial").then((m) => m.MemorySpanTutorial), { loading }),
   corsi: dynamic(() => import("@/components/games/generic-tutorial").then((m) => m.CorsiTutorial), { loading }),
+  "complex-working-memory": dynamic(() => import("@/components/games/cwm-tutorial").then((m) => m.CwmTutorial), { loading }),
+  pasat: dynamic(() => import("@/components/games/pasat-tutorial").then((m) => m.PasatTutorial), { loading }),
 };
 
 export function TutorialRouter({ gameId }: { gameId: GameId }) {
