@@ -26,20 +26,23 @@ difficulty to how you actually perform.
 
 - **N-Back** — position, audio, colour and shape channels; single through quad modes. Blocks are `20 + n²`
   trials (Brain Workshop's formula, which reproduces the 84 trials at 8-back that BrainScale reports).
-  Selectable adaptive policies, each paired with the scoring rule it was written for — the rule matters,
-  because it decides where the "did nothing at all" baseline sits:
+  **Scoring is the share of targets you caught, and nothing else.** Catch 5 of 10 and it reads 50%, so the
+  percentage on screen always agrees with the count printed beside it. Correct non-responses are not
+  credited — doing so would put the floor at the non-target rate (~75%) and make a block where you caught
+  almost nothing read like a pass.
 
-  | Policy | Formula | Aggregation | Thresholds | Floor |
-  | --- | --- | --- | --- | --- |
-  | Standard | `(TP + TN) / all trials` | mean of modalities | 90 up / 70 down | ~75% |
-  | Jaeggi | `(TP + TN) / all trials` | weakest modality | 90 up / 75 down | ~75% |
-  | Brain Workshop | `TP / (TP + FP + FN)` | pooled | 80 up / 50 down ×3 | 0% |
-  | Manual | `TP / (TP + FP + FN)` | pooled | never moves | 0% |
+  False alarms are reported separately rather than folded into the percentage, because folding them in
+  would break that agreement. Instead they cap promotion: a block whose false-alarm rate exceeds the
+  policy's limit can hold or fall, never rise, so pressing at every trial catches every target, scores
+  100%, and still does not level you up.
 
-  Under the first two, correct non-responses count — so ignoring a block entirely still scores about 75%,
-  and the results screen says so when a block lands at or below that. Brain Workshop mode scores only the
-  targets you catch. Either way the results screen leads with the raw count (`1 / 24 targets caught · 4
-  false alarms`), which is the same number under every rule.
+  | Policy | Combines modalities by | Thresholds | False-alarm cap |
+  | --- | --- | --- | --- |
+  | Standard | mean | 90 up / 70 down | 20% |
+  | Jaeggi | weakest modality | 90 up / 75 down | 15% |
+  | Brain Workshop | pooled | 80 up / 50 down ×3 | 25% |
+  | Manual | pooled | never moves | — |
+
 - **CWM** — 8×8 symmetry judgement interleaved with a 4×4 cell to remember, 650 ms highlight / 500 ms blank,
   promoting after two consecutive perfect blocks.
 - **PASAT** — the standard 3.0 / 2.4 / 2.0 / 1.6 s ISI ladder over 61 digits.

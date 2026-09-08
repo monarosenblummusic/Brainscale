@@ -1,6 +1,6 @@
 import type { Session } from "@/lib/types";
 import { createRng } from "./rng";
-import { applyPolicy, POLICIES, type AdaptivePolicyId, type ScoringRule } from "./adaptive";
+import { applyPolicy, POLICIES, type AdaptivePolicyId } from "./adaptive";
 import type { BaseState, Engine, InputEvent } from "./types";
 
 /* ----------------------------------------------------------- Configuration */
@@ -186,23 +186,26 @@ export function isTarget(trials: TrialStimulus[], index: number, n: number, moda
 /* ------------------------------------------------------------------ Scoring */
 
 /**
- * Per-modality accuracy under a given scoring rule.
+ * The score is the share of targets you caught. Nothing else.
  *
- * The rule genuinely changes what a number means, so it is never implicit:
+ * Catch 5 of 10 and it says 50%, so the percentage always agrees with the count
+ * printed next to it. Correct non-responses are not credited: crediting them
+ * puts the floor at the non-target rate, which is around 75%, and a block where
+ * you caught almost nothing then reads like a pass.
  *
- *  - `all-trials` counts a correct non-response as correct. That is defensible
- *    — staying silent on a non-target *is* a decision — but it puts the floor
- *    at the non-target rate: ignore a block entirely and you still score ~75%.
- *  - `responses-only` is the share of targets caught, penalised by false
- *    alarms. Doing nothing scores 0, pressing everything scores ~25%.
+ * False alarms deliberately do not enter here — folding them in would make the
+ * percentage stop matching the fraction. They are reported separately and cap
+ * promotion instead (see `canPromote`), which is what stops a player who
+ * presses on every trial from catching every target and levelling up.
  */
-export function channelAccuracy(score: ChannelScore, rule: ScoringRule = "all-trials"): number {
-  if (rule === "responses-only") {
-    const denominator = score.hits + score.misses + score.falseAlarms;
-    return denominator === 0 ? 1 : score.hits / denominator;
-  }
-  const judged = score.hits + score.misses + score.falseAlarms + score.correctRejections;
-  return judged === 0 ? 1 : (score.hits + score.correctRejections) / judged;
+export function channelAccuracy(score: ChannelScore): number {
+  return score.targets === 0 ? 1 : score.hits / score.targets;
+}
+
+/** False alarms as a share of the trials where not responding was correct. */
+export function falseAlarmRate(score: ChannelScore): number {
+  const nonTargets = score.falseAlarms + score.correctRejections;
+  return nonTargets === 0 ? 0 : score.falseAlarms / nonTargets;
 }
 
 function pool(scores: ChannelScore[]): ChannelScore {
@@ -224,33 +227,30 @@ export function blockAccuracy(state: NBackState, policyId: AdaptivePolicyId): nu
   if (scores.length === 0) return 0;
 
   switch (policy.aggregate) {
-    // Brain Workshop pools the counters across modalities before dividing, so
-    // one modality with many targets is not weighted the same as one with few.
+    // Pooled counts every target once, so a modality is not weighted by how
+    // few targets it happened to draw.
     case "pooled":
-      return channelAccuracy(pool(scores), policy.scoring);
+      return channelAccuracy(pool(scores));
     // Jaeggi scores the weakest modality, so a strong visual channel cannot
     // carry a neglected auditory one.
     case "min":
-      return Math.min(...scores.map((s) => channelAccuracy(s, policy.scoring)));
+      return Math.min(...scores.map(channelAccuracy));
     default: {
-      const values = scores.map((s) => channelAccuracy(s, policy.scoring));
+      const values = scores.map(channelAccuracy);
       return values.reduce((a, b) => a + b, 0) / values.length;
     }
   }
 }
 
 /**
- * The score a player gets for not responding at all under this policy — the
- * point below which a percentage means "worse than not playing". Shown on the
- * results screen, because a 70% that sits under a 75% floor otherwise reads
- * like a passing grade.
+ * Whether the block is clean enough to promote on.
+ *
+ * Pressing on every trial catches every target, which would be a 100% score.
+ * The score stays honest about detection; this is what keeps the *level* honest.
  */
-export function chanceFloor(state: NBackState, policyId: AdaptivePolicyId): number {
-  if (POLICIES[policyId].scoring === "responses-only") return 0;
-  const trials = state.trials.length;
-  if (trials === 0) return 0;
-  const targets = Math.round((trials - state.n) * 0.25);
-  return (trials - targets) / trials;
+export function canPromote(state: NBackState, policyId: AdaptivePolicyId): boolean {
+  const rate = falseAlarmRate(pool(state.modalities.map((m) => state.scores[m])));
+  return rate <= POLICIES[policyId].maxFalseAlarmRate;
 }
 
 /* ------------------------------------------------------------------ Engine */
@@ -260,6 +260,8 @@ export interface NBackResult {
   perModality: { modality: Modality; accuracy: number; score: ChannelScore }[];
   nextLevel: number;
   direction: "up" | "down" | "hold";
+  /** The block scored high enough to promote, but had too many false alarms. */
+  heldByFalseAlarms: boolean;
 }
 
 /**
@@ -377,15 +379,24 @@ export const nbackEngine: Engine<NBackConfig, NBackState, NBackResult> = {
   },
 
   result(state) {
-    const rule = POLICIES[state.policy].scoring;
     const perModality = state.modalities.map((m) => ({
       modality: m,
-      accuracy: channelAccuracy(state.scores[m], rule),
+      accuracy: channelAccuracy(state.scores[m]),
       score: state.scores[m],
     }));
     const accuracy = blockAccuracy(state, state.policy);
     const change = applyPolicy(POLICIES[state.policy], state.n, accuracy, 0, { min: 1, max: 20 });
-    return { accuracy, perModality, nextLevel: change.level, direction: change.direction };
+
+    // A block good enough to promote on, but reached by pressing at everything,
+    // holds instead. Demotions are never blocked — only the rise is earned.
+    const blocked = change.direction === "up" && !canPromote(state, state.policy);
+    return {
+      accuracy,
+      perModality,
+      nextLevel: blocked ? state.n : change.level,
+      direction: blocked ? ("hold" as const) : change.direction,
+      heldByFalseAlarms: blocked,
+    };
   },
 
   toSession(state, config, startedAt): Omit<Session, "id"> {
@@ -399,16 +410,14 @@ export const nbackEngine: Engine<NBackConfig, NBackState, NBackResult> = {
       policy: config.policy,
       modalities: state.modalities.join("+"),
     };
-    const rule = POLICIES[config.policy].scoring;
     for (const m of state.modalities) {
       const s = state.scores[m];
-      metrics[`${m}Accuracy`] = Math.round(channelAccuracy(s, rule) * 1000) / 1000;
+      metrics[`${m}Accuracy`] = Math.round(channelAccuracy(s) * 1000) / 1000;
       metrics[`${m}Hits`] = s.hits;
       metrics[`${m}Misses`] = s.misses;
       metrics[`${m}FalseAlarms`] = s.falseAlarms;
       metrics[`${m}Targets`] = s.targets;
     }
-    metrics.scoringRule = rule;
 
     return {
       gameId: "n-back",

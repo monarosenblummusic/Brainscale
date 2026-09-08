@@ -2,28 +2,10 @@
  * Level-adjustment policies.
  *
  * BrainScale offers a choice of training modes rather than one fixed rule, and
- * the thresholds differ meaningfully between them — the Jaeggi protocol is
- * stricter than Brain Workshop's default, and which one you train under changes
- * how fast you climb. So these are data, selectable at play time, not a
- * hard-coded `if`.
+ * the thresholds differ meaningfully between them, so these are data selectable
+ * at play time rather than a hard-coded `if`.
  */
 export type AdaptivePolicyId = "standard" | "jaeggi" | "classic" | "manual";
-
-/**
- * How a block's percentage is computed.
- *
- * This is not cosmetic — the two rules put the "did nothing at all" baseline in
- * completely different places, so a threshold only means what it says when it
- * is paired with the rule it was written for.
- *
- *  - `all-trials`      (TP + TN) / (TP + TN + FP + FN). Counts correct
- *    non-responses. Because only ~25% of trials are targets, ignoring a block
- *    entirely still scores ~75%, so the meaningful range is 75-100%.
- *  - `responses-only`  TP / (TP + FP + FN). Correct non-responses are excluded,
- *    so the score is the share of targets caught, penalised by false alarms.
- *    Doing nothing scores 0 and pressing everything scores ~25%.
- */
-export type ScoringRule = "all-trials" | "responses-only";
 
 /** How the per-modality scores combine into one block score. */
 export type Aggregation = "mean" | "min" | "pooled";
@@ -32,15 +14,22 @@ export interface AdaptivePolicy {
   id: AdaptivePolicyId;
   name: string;
   description: string;
-  /** Accuracy (0..1) at or above which the level rises. */
+  /** Share of targets caught (0..1) at or above which the level rises. */
   up: number;
-  /** Accuracy below which the level falls. */
+  /** Share below which the level falls. */
   down: number;
   /** Consecutive sub-`down` blocks required before the level actually falls. */
   downStreak: number;
-  scoring: ScoringRule;
   aggregate: Aggregation;
-  /** Short phrase naming the rule, for the results screen. */
+  /**
+   * False alarms are not subtracted from the score — the score is exactly the
+   * fraction of targets you caught, so it always matches the count shown beside
+   * it. But pressing everything would otherwise catch every target and promote
+   * you, so a block with a false-alarm rate above this cap can hold or fall,
+   * never rise.
+   */
+  maxFalseAlarmRate: number;
+  /** Short phrase naming how the modalities were combined, for the results screen. */
   scoreLabel: string;
 }
 
@@ -48,38 +37,36 @@ export const POLICIES: Record<AdaptivePolicyId, AdaptivePolicy> = {
   standard: {
     id: "standard",
     name: "Standard",
-    description:
-      "90% to advance, below 70% to drop back. Correct non-responses count, so the scale effectively runs from 75% upward.",
+    description: "Catch 90% of the targets to advance; below 70% drops you back.",
     up: 0.9,
     down: 0.7,
     downStreak: 1,
-    scoring: "all-trials",
     aggregate: "mean",
+    maxFalseAlarmRate: 0.2,
     scoreLabel: "average of modalities",
   },
   jaeggi: {
     id: "jaeggi",
     name: "Jaeggi",
     description:
-      "The 2008 protocol: 90% up, below 75% down, scored on your weakest modality. Correct non-responses count.",
+      "The 2008 protocol: 90% to advance, below 75% to drop, and you are scored on your weakest modality.",
     up: 0.9,
     down: 0.75,
     downStreak: 1,
-    scoring: "all-trials",
     aggregate: "min",
+    maxFalseAlarmRate: 0.15,
     scoreLabel: "weakest modality",
   },
   classic: {
     id: "classic",
     name: "Brain Workshop",
-    description:
-      "Scores only the targets you catch, so it starts at zero rather than 75%. 80% to advance, three blocks below 50% to drop.",
+    description: "More forgiving: 80% to advance, and three blocks below 50% before dropping.",
     up: 0.8,
     down: 0.5,
     downStreak: 3,
-    scoring: "responses-only",
     aggregate: "pooled",
-    scoreLabel: "share of targets caught",
+    maxFalseAlarmRate: 0.25,
+    scoreLabel: "all modalities pooled",
   },
   manual: {
     id: "manual",
@@ -88,9 +75,9 @@ export const POLICIES: Record<AdaptivePolicyId, AdaptivePolicy> = {
     up: Infinity,
     down: -Infinity,
     downStreak: 1,
-    scoring: "responses-only",
     aggregate: "pooled",
-    scoreLabel: "share of targets caught",
+    maxFalseAlarmRate: 1,
+    scoreLabel: "all modalities pooled",
   },
 };
 

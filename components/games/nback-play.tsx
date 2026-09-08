@@ -7,7 +7,7 @@ import { GAME_BY_ID } from "@/lib/games";
 import {
   MODALITY_LABEL,
   NBACK_DEFAULTS,
-  chanceFloor,
+  falseAlarmRate,
   isTarget,
   modeLabel,
   nbackEngine,
@@ -174,30 +174,34 @@ export function NBackPlay() {
     const caught = r.perModality.reduce((sum, p) => sum + p.score.hits, 0);
     const totalTargets = r.perModality.reduce((sum, p) => sum + p.score.targets, 0);
     const falseAlarms = r.perModality.reduce((sum, p) => sum + p.score.falseAlarms, 0);
-    const floor = chanceFloor(state, config.policy);
 
     return (
       <PlayFrame>
         <Hud game={GAME} level={modeLabel(config)} />
         <ResultScreen
           game={GAME}
-          // The headline is the raw count, not the percentage. A block where
-          // you catch almost nothing can still score 70% under a rule that
-          // credits correct non-responses, and "70%" reads like a pass mark —
-          // "1 / 24 caught" cannot be misread.
+          // Count and percentage are the same fact stated twice, so they can
+          // never disagree: 5 of 10 caught is 50%.
           headline={`${caught} / ${totalTargets}`}
-          sublabel={`targets caught${falseAlarms > 0 ? ` · ${falseAlarms} false alarm${falseAlarms === 1 ? "" : "s"}` : ""}`}
+          sublabel={`targets caught · ${Math.round((totalTargets === 0 ? 0 : caught / totalTargets) * 100)}%${
+            falseAlarms > 0 ? ` · ${falseAlarms} false alarm${falseAlarms === 1 ? "" : "s"}` : ""
+          }`}
           verdict={{ text: verdictText, tone: r.direction }}
           rows={[
             { label: "Level played", value: `${config.n}-back` },
-            ...r.perModality.map((p) => ({
-              label: MODALITY_LABEL[p.modality],
-              value: `${p.score.hits}/${p.score.targets} caught · ${p.score.falseAlarms} false · ${Math.round(p.accuracy * 100)}%`,
-              tone: (p.accuracy >= policy.up ? "good" : p.accuracy < policy.down ? "bad" : "default") as
-                | "good"
-                | "bad"
-                | "default",
-            })),
+            ...r.perModality.map((p) => {
+              // A modality is only "good" if it was also clean. 6/6 caught by
+              // pressing at everything is not a green row.
+              const noisy = falseAlarmRate(p.score) > policy.maxFalseAlarmRate;
+              return {
+                label: MODALITY_LABEL[p.modality],
+                value: `${p.score.hits}/${p.score.targets} caught · ${p.score.falseAlarms} false · ${Math.round(p.accuracy * 100)}%`,
+                tone: (noisy || p.accuracy < policy.down ? "bad" : p.accuracy >= policy.up ? "good" : "default") as
+                  | "good"
+                  | "bad"
+                  | "default",
+              };
+            }),
             {
               label: `Block score (${policy.scoreLabel})`,
               value: `${Math.round(r.accuracy * 100)}%`,
@@ -211,15 +215,14 @@ export function NBackPlay() {
           ]}
           onAgain={again}
           extra={
-            // Only worth saying when it actually happened: under a rule that
-            // credits correct non-responses, a block can score in the seventies
-            // while being worse than not playing at all.
-            floor > 0 && r.accuracy <= floor ? (
-              <p className="mt-5 rounded-xl bg-[var(--bg-subtle)] px-4 py-3 text-[13px] leading-relaxed text-[var(--text-muted)]">
-                {policy.name} mode credits correct non-responses, so not pressing anything at all would have
-                scored <span className="tnum font-medium">{Math.round(floor * 100)}%</span>. Switch to{" "}
-                <span className="font-medium text-[var(--text)]">Brain Workshop</span> mode in settings for a
-                score that counts only the targets you catch and starts from zero.
+            // The score counts only targets caught, so a block reached by
+            // pressing at everything would otherwise read 100%. Say plainly why
+            // the level is not moving.
+            r.heldByFalseAlarms ? (
+              <p className="mt-5 rounded-xl bg-[var(--danger-soft)] px-4 py-3 text-[13px] leading-relaxed text-[var(--danger)]">
+                Enough targets caught to level up, but{" "}
+                <span className="tnum font-medium">{falseAlarms}</span> false alarms is too many to promote
+                on. Catching targets counts; pressing at everything does not.
               </p>
             ) : null
           }

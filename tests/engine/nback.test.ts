@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   blockAccuracy,
-  chanceFloor,
+  canPromote,
   channelAccuracy,
+  falseAlarmRate,
   generateTrials,
   isTarget,
   modeLabel,
@@ -104,52 +105,49 @@ describe("trial generation", () => {
   });
 });
 
-describe("scoring rules", () => {
-  // Brain Workshop documents two different formulas, and a threshold only means
-  // what it says when paired with the rule it was written for:
-  //   default     TP / (TP + FP + FN)             -> floor 0
-  //   Jaeggi mode (TP + TN) / (TP + TN + FP + FN) -> floor = the non-target rate
+describe("scoring", () => {
+  // One rule, everywhere: the score is the share of targets caught, so the
+  // percentage always equals the fraction printed next to it.
   const silent = { hits: 0, misses: 6, falseAlarms: 0, correctRejections: 18, targets: 6 };
+  const half = { hits: 3, misses: 3, falseAlarms: 0, correctRejections: 18, targets: 6 };
   const perfect = { hits: 6, misses: 0, falseAlarms: 0, correctRejections: 18, targets: 6 };
   const spam = { hits: 6, misses: 0, falseAlarms: 18, correctRejections: 0, targets: 6 };
 
-  it("all-trials credits correct non-responses, putting the floor at the non-target rate", () => {
-    expect(channelAccuracy(silent, "all-trials")).toBe(0.75);
-    expect(channelAccuracy(perfect, "all-trials")).toBe(1);
-    expect(channelAccuracy(spam, "all-trials")).toBe(0.25);
+  it("is exactly caught over targets", () => {
+    expect(channelAccuracy(silent)).toBe(0);
+    expect(channelAccuracy(half)).toBe(0.5);
+    expect(channelAccuracy(perfect)).toBe(1);
+    expect(channelAccuracy({ hits: 5, misses: 5, falseAlarms: 0, correctRejections: 0, targets: 10 })).toBe(0.5);
+    expect(channelAccuracy({ hits: 1, misses: 23, falseAlarms: 0, correctRejections: 0, targets: 24 })).toBeCloseTo(
+      1 / 24,
+      6,
+    );
   });
 
-  it("responses-only scores the share of targets caught, starting from zero", () => {
-    expect(channelAccuracy(silent, "responses-only")).toBe(0);
-    expect(channelAccuracy(perfect, "responses-only")).toBe(1);
-    expect(channelAccuracy(spam, "responses-only")).toBe(0.25);
+  it("does not let false alarms change the score", () => {
+    // Otherwise the percentage would stop agreeing with the count beside it.
+    const withFalseAlarms = { ...half, falseAlarms: 9, correctRejections: 9 };
+    expect(channelAccuracy(withFalseAlarms)).toBe(channelAccuracy(half));
   });
 
-  it("penalises misses and false alarms equally under all-trials", () => {
-    const miss = channelAccuracy({ hits: 0, misses: 1, falseAlarms: 0, correctRejections: 3, targets: 1 }, "all-trials");
-    const fa = channelAccuracy({ hits: 0, misses: 0, falseAlarms: 1, correctRejections: 3, targets: 0 }, "all-trials");
-    expect(miss).toBeCloseTo(0.75);
-    expect(fa).toBeCloseTo(0.75);
+  it("measures the false-alarm rate against the non-target trials", () => {
+    expect(falseAlarmRate(silent)).toBe(0);
+    expect(falseAlarmRate(spam)).toBe(1);
+    expect(falseAlarmRate({ ...half, falseAlarms: 9, correctRejections: 9 })).toBe(0.5);
   });
 
-  it("reports the do-nothing floor for each policy", () => {
-    const state = nbackEngine.init(cfg({ n: 2, modalities: ["position"] }), 1);
-    // 24 trials, 6 targets -> silence scores 18/24.
-    expect(chanceFloor(state, "standard")).toBe(0.75);
-    expect(chanceFloor(state, "jaeggi")).toBe(0.75);
-    expect(chanceFloor(state, "classic")).toBe(0);
+  it("penalises misses and false alarms equally", () => {
+    const miss = channelAccuracy({ hits: 0, misses: 1, falseAlarms: 0, correctRejections: 3, targets: 1 });
+    expect(miss).toBe(0);
   });
 
-  it("scores a silent player at the non-target rate under all-trials", () => {
+  it("scores a silent player at zero", () => {
     const config = cfg({ n: 2, modalities: ["position"], trialMs: 1000 });
     let s = nbackEngine.init(config, 42);
     s = run(s, s.trials.length * s.trialMs + 200);
 
     expect(nbackEngine.isFinished(s)).toBe(true);
-    const acc = channelAccuracy(s.scores.position, "all-trials");
-    // 24 trials, 22 eligible, ~5-6 targets: silence earns roughly 0.75.
-    expect(acc).toBeGreaterThan(0.7);
-    expect(acc).toBeLessThan(0.8);
+    expect(channelAccuracy(s.scores.position)).toBe(0);
     expect(s.scores.position.hits).toBe(0);
     expect(s.scores.position.falseAlarms).toBe(0);
   });
@@ -168,8 +166,8 @@ describe("scoring rules", () => {
     s = nbackEngine.tick(s, total * s.trialMs + 10);
 
     expect(nbackEngine.isFinished(s)).toBe(true);
-    expect(channelAccuracy(s.scores.position, "all-trials")).toBe(1);
-    expect(channelAccuracy(s.scores.audio, "all-trials")).toBe(1);
+    expect(channelAccuracy(s.scores.position)).toBe(1);
+    expect(channelAccuracy(s.scores.audio)).toBe(1);
     expect(blockAccuracy(s, "standard")).toBe(1);
     expect(blockAccuracy(s, "classic")).toBe(1);
   });
@@ -234,35 +232,40 @@ describe("adaptive outcome", () => {
     expect(r.nextLevel).toBe(4);
   });
 
-  it("holds a silent block, because most trials are correct rejections", () => {
-    // Worth stating explicitly: silence is not a zero. Only ~25% of trials are
-    // targets, so ignoring the block entirely still earns ~76% — above the
-    // standard policy's 70% floor. This is faithful to how the paradigm scores,
-    // and it is why the level does not collapse when a player zones out once.
+  it("demotes a silent block, which now scores zero", () => {
     const { state } = blockWith("silent", "standard");
     const r = nbackEngine.result(state);
-    expect(r.accuracy).toBeGreaterThan(0.7);
-    expect(r.accuracy).toBeLessThan(0.8);
-    expect(r.direction).toBe("hold");
-    expect(r.nextLevel).toBe(3);
-  });
-
-  it("demotes when the player presses on every trial", () => {
-    // Pressing everything turns every non-target into a false alarm, which is
-    // the behaviour the down-threshold exists to catch.
-    const { state } = blockWith("spam", "standard");
-    const r = nbackEngine.result(state);
-    expect(r.accuracy).toBeLessThan(0.7);
+    expect(r.accuracy).toBe(0);
     expect(r.direction).toBe("down");
     expect(r.nextLevel).toBe(2);
   });
 
+  it("holds a spammed block rather than promoting it", () => {
+    // Pressing on every trial catches every target, so the detection score is
+    // a perfect 100%. The false-alarm cap is the only thing standing between
+    // that and a free promotion, which is exactly its job.
+    const { state } = blockWith("spam", "standard");
+    const r = nbackEngine.result(state);
+    expect(r.accuracy).toBe(1);
+    expect(canPromote(state, "standard")).toBe(false);
+    expect(r.heldByFalseAlarms).toBe(true);
+    expect(r.direction).toBe("hold");
+    expect(r.nextLevel).toBe(3);
+  });
+
+  it("promotes a clean block and reports no false-alarm hold", () => {
+    const { state } = blockWith("perfect", "standard");
+    const r = nbackEngine.result(state);
+    expect(canPromote(state, "standard")).toBe(true);
+    expect(r.heldByFalseAlarms).toBe(false);
+    expect(r.direction).toBe("up");
+  });
+
   it("does not promote a mediocre block under Brain Workshop mode", () => {
-    // Regression. Brain Workshop's thresholds (80/50) were previously paired
-    // with Jaeggi's formula, which credits correct non-responses. At 3-back
-    // that is 29 trials and 7 targets, so catching just 2 of them scored
-    // (2 + 22) / 29 = 83% and *promoted* the player. Under Brain Workshop's own
-    // formula the same block is 2/7 = 29%, which is the honest number.
+    // Regression, in its second form. Brain Workshop's 80/50 thresholds were
+    // once paired with a formula that credited correct non-responses, so at
+    // 3-back catching just 2 of 7 targets scored 83% and *promoted* the player.
+    // The score is now the share caught, so the same block reads 2/7 = 29%.
     const config = cfg({ n: 3, modalities: ["position"], trialMs: 1000, policy: "classic" });
     let s = nbackEngine.init(config, 2024);
     const total = s.trials.length;
@@ -281,20 +284,8 @@ describe("adaptive outcome", () => {
     expect(s.scores.position.hits).toBe(2);
     expect(s.scores.position.falseAlarms).toBe(0);
     expect(blockAccuracy(s, "classic")).toBeCloseTo(2 / targets, 5);
-    expect(nbackEngine.result(s).direction).toBe("hold");
-
-    // The same block under the all-trials rule is where the old bug lived.
-    expect(blockAccuracy(s, "standard")).toBeGreaterThan(0.8);
-  });
-
-  it("holds a spammed block under the forgiving classic policy", () => {
-    // ~0.24 is below classic's 0.5 floor, but classic needs three such blocks
-    // in a row before it drops the level, so a single one holds.
-    const { state } = blockWith("spam", "classic");
-    const r = nbackEngine.result(state);
-    expect(r.accuracy).toBeLessThan(0.5);
-    expect(r.direction).toBe("hold");
-    expect(r.nextLevel).toBe(3);
+    expect(blockAccuracy(s, "classic")).toBeLessThan(0.5);
+    expect(nbackEngine.result(s).direction).toBe("hold"); // 1 of 3 failing blocks
   });
 
   it("never moves the level under the manual policy", () => {
@@ -315,8 +306,8 @@ describe("adaptive outcome", () => {
     }
     s = nbackEngine.tick(s, total * 1000 + 10);
 
-    expect(channelAccuracy(s.scores.position, "all-trials")).toBe(1);
-    expect(blockAccuracy(s, "jaeggi")).toBe(channelAccuracy(s.scores.audio, "all-trials"));
+    expect(channelAccuracy(s.scores.position)).toBe(1);
+    expect(blockAccuracy(s, "jaeggi")).toBe(channelAccuracy(s.scores.audio));
     expect(blockAccuracy(s, "jaeggi")).toBeLessThan(blockAccuracy(s, "standard"));
   });
 });
