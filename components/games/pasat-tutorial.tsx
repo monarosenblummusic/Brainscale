@@ -5,7 +5,7 @@ import { GAME_BY_ID } from "@/lib/games";
 import { generateDigits } from "@/lib/engine/pasat";
 import { playCue, speakNumber, unlockAudio } from "@/lib/audio";
 import { TutorialShell, type TutorialStep } from "@/components/games/tutorial-shell";
-import { Button, cx } from "@/components/ui";
+import { Button } from "@/components/ui";
 
 const GAME = GAME_BY_ID["pasat"];
 

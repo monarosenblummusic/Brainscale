@@ -17,7 +17,7 @@ import {
 } from "@/lib/engine/nback";
 import { POLICIES } from "@/lib/engine/adaptive";
 import { playCue, playStimulus, waitForVoices, type AudioMode } from "@/lib/audio";
-import { Countdown, Hud, PauseOverlay, PlayFrame, ResultScreen, Stage, StartGate, useCountdown } from "@/components/game-shell";
+import { Countdown, Hud, PauseOverlay, PlayFrame, ResultScreen, Stage, StartGate } from "@/components/game-shell";
 import { NBackGrid, ResponseButtons } from "@/components/games/nback-stimulus";
 import { Kbd } from "@/components/ui";
 import type { Session } from "@/lib/types";
@@ -38,17 +38,20 @@ export const NBACK_PREFS: NBackPrefs = {
 export function NBackPlay() {
   const { settings, loaded } = useGameSettings<NBackPrefs>("n-back", NBACK_PREFS);
   const storedLevel = useLastLevel("n-back", NBACK_PREFS.n);
-  const [level, setLevel] = useState<number | null>(null);
   const [counting, setCounting] = useState(false);
   const [lastSession, setLastSession] = useState<Session | null>(null);
   const [audioFallback, setAudioFallback] = useState(false);
 
-  // The level to play is the one the adaptive policy left us on, unless the
-  // player has pinned it manually.
-  useEffect(() => {
-    if (level !== null || storedLevel === null || !loaded) return;
-    setLevel(settings.policy === "manual" ? settings.n : storedLevel);
-  }, [level, storedLevel, loaded, settings.policy, settings.n]);
+  // Set only when the player finishes a block and the policy moves them, so it
+  // overrides the stored level for the rest of the visit.
+  const [levelOverride, setLevelOverride] = useState<number | null>(null);
+
+  // Derived, not copied into state by an effect: the level to play is whatever
+  // the adaptive policy last left us on, unless the player has pinned it
+  // manually or just finished a block. Null while the stored level is loading.
+  const level =
+    levelOverride ??
+    (loaded && storedLevel !== null ? (settings.policy === "manual" ? settings.n : storedLevel) : null);
 
   const config: NBackConfig = { ...settings, n: level ?? settings.n };
 
@@ -65,15 +68,23 @@ export function NBackPlay() {
     lastSpokenRef.current = state.index;
     const stimulus = state.trials[state.index];
     if (!stimulus) return;
-    const used = playStimulus(stimulus.audio, settings.audioMode);
-    if (used !== settings.audioMode) setAudioFallback(true);
+    // playStimulus falls back to tones on its own when no voice exists; the
+    // player is told about that before the session starts, from waitForVoices
+    // below, which is the only point at which the notice is actionable.
+    playStimulus(stimulus.audio, settings.audioMode);
   }, [state, status, config.modalities, settings.audioMode]);
 
+  const wantsSpeech = settings.audioMode === "speech" && config.modalities.includes("audio");
   useEffect(() => {
-    if (settings.audioMode === "speech" && config.modalities.includes("audio")) {
-      void waitForVoices().then((ok) => setAudioFallback(!ok));
-    }
-  }, [settings.audioMode, config.modalities]);
+    if (!wantsSpeech) return;
+    let alive = true;
+    void waitForVoices().then((ok) => {
+      if (alive) setAudioFallback(!ok);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [wantsSpeech]);
 
   /* ---------------------------- Keyboard ---------------------------------- */
   const beginCountdown = useCallback(() => {
@@ -124,14 +135,14 @@ export function NBackPlay() {
     return () => window.removeEventListener("keydown", onKey);
   }, [status, config.modalities, settings.keys, respond, pause, resume, beginCountdown]);
 
-  const countdownValue = useCountdown(counting, 3, () => {
+  const onCountdownDone = useCallback(() => {
     setCounting(false);
     start();
-  });
+  }, [start]);
 
   const again = useCallback(() => {
     const next = lastSession?.metrics?.nextLevel;
-    if (typeof next === "number") setLevel(next);
+    if (typeof next === "number") setLevelOverride(next);
     setLastSession(null);
     reset();
     beginCountdown();
@@ -236,23 +247,32 @@ export function NBackPlay() {
 
       <div className="relative flex min-h-0 flex-1 flex-col">
         {counting ? (
-          <Countdown value={countdownValue} />
+          <Countdown onDone={onCountdownDone} />
         ) : (
           <Stage>
-            <NBackGrid
-              stimulus={stimulus}
-              visible={state?.stimulusVisible ?? false}
-              modalities={config.modalities}
-              shapeRedundancy={settings.shapeRedundancy}
-            />
-            <ResponseButtons
-              modalities={config.modalities}
-              keys={settings.keys}
-              responded={state?.responded ?? {}}
-              feedback={settings.feedback ? (state?.lastFeedback ?? {}) : {}}
-              onRespond={respond}
-              disabled={status !== "running"}
-            />
+            {/* On a phone the response buttons are pressed with thumbs, so
+                they sit at the bottom of the viewport and the grid centres in
+                whatever space is left above them. On larger screens the
+                keyboard is the primary input and the compact centred stack
+                reads better. */}
+            <div className="flex w-full flex-1 items-center justify-center sm:flex-none">
+              <NBackGrid
+                stimulus={stimulus}
+                visible={state?.stimulusVisible ?? false}
+                modalities={config.modalities}
+                shapeRedundancy={settings.shapeRedundancy}
+              />
+            </div>
+            <div className="flex w-full justify-center">
+              <ResponseButtons
+                modalities={config.modalities}
+                keys={settings.keys}
+                responded={state?.responded ?? {}}
+                feedback={settings.feedback ? (state?.lastFeedback ?? {}) : {}}
+                onRespond={respond}
+                disabled={status !== "running"}
+              />
+            </div>
           </Stage>
         )}
 

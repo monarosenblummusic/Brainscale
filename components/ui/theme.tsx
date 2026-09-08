@@ -1,8 +1,56 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useSyncExternalStore } from "react";
 
-type Theme = "light" | "dark" | "system";
+export type Theme = "light" | "dark" | "system";
+
+const STORAGE_KEY = "brainscale-theme";
+
+/**
+ * The theme lives in localStorage, which is a client-only external store —
+ * unreadable during server rendering and changeable from another tab.
+ * `useSyncExternalStore` is the primitive for exactly this: it gives the server
+ * a defined snapshot, hydrates without a mismatch, and needs no effect to copy
+ * the value into state after mount.
+ */
+const listeners = new Set<() => void>();
+
+function subscribe(onChange: () => void) {
+  listeners.add(onChange);
+  // A change in another tab should be reflected here too.
+  window.addEventListener("storage", onChange);
+  return () => {
+    listeners.delete(onChange);
+    window.removeEventListener("storage", onChange);
+  };
+}
+
+function getSnapshot(): Theme {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored === "light" || stored === "dark" || stored === "system") return stored;
+  } catch {
+    /* storage blocked — fall through to the default */
+  }
+  return "system";
+}
+
+/** Server and first client render agree on "system", so hydration is stable. */
+function getServerSnapshot(): Theme {
+  return "system";
+}
+
+function write(theme: Theme) {
+  try {
+    localStorage.setItem(STORAGE_KEY, theme);
+  } catch {
+    /* storage blocked — the DOM attribute below still applies for this visit */
+  }
+  const root = document.documentElement;
+  if (theme === "system") root.removeAttribute("data-theme");
+  else root.setAttribute("data-theme", theme);
+  listeners.forEach((l) => l());
+}
 
 const ThemeContext = createContext<{ theme: Theme; setTheme: (t: Theme) => void }>({
   theme: "system",
@@ -11,39 +59,23 @@ const ThemeContext = createContext<{ theme: Theme; setTheme: (t: Theme) => void 
 
 export const useTheme = () => useContext(ThemeContext);
 
-/** Applied before paint by an inline script so there is no light-mode flash. */
+/**
+ * Applied before first paint by an inline script, so a dark-theme visitor never
+ * sees a flash of the light palette while React boots.
+ */
 export const themeScript = `
 (function(){try{
-  var t=localStorage.getItem('brainscale-theme')||'system';
+  var t=localStorage.getItem('${STORAGE_KEY}')||'system';
   if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);
 }catch(e){}})();
 `;
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("system");
+  const theme = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const setTheme = useCallback((next: Theme) => write(next), []);
+  const value = useMemo(() => ({ theme, setTheme }), [theme, setTheme]);
 
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem("brainscale-theme") as Theme | null;
-      if (stored) setThemeState(stored);
-    } catch {
-      /* storage blocked — stay on system */
-    }
-  }, []);
-
-  const setTheme = useCallback((next: Theme) => {
-    setThemeState(next);
-    try {
-      localStorage.setItem("brainscale-theme", next);
-    } catch {
-      /* ignore */
-    }
-    const root = document.documentElement;
-    if (next === "system") root.removeAttribute("data-theme");
-    else root.setAttribute("data-theme", next);
-  }, []);
-
-  return <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>;
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
 export function ThemeToggle() {

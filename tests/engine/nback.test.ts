@@ -164,7 +164,7 @@ describe("scoring", () => {
 
   it("ignores a press on a modality that is not being played", () => {
     const config = cfg({ n: 2, modalities: ["position"], trialMs: 1000 });
-    let s = nbackEngine.init(config, 11);
+    const s = nbackEngine.init(config, 11);
     const next = nbackEngine.input(s, { kind: "respond", channel: "shape" });
     expect(next).toBe(s);
   });

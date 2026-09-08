@@ -15,7 +15,7 @@ export function StatsView() {
   const { streak, bests } = useProfile();
   const [filter, setFilter] = useState<GameId | "all">("all");
 
-  const all = sessions ?? [];
+  const all = useMemo(() => sessions ?? [], [sessions]);
   const filtered = filter === "all" ? all : all.filter((s) => s.gameId === filter);
 
   const totals = useMemo(() => {

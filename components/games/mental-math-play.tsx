@@ -20,7 +20,6 @@ import {
   ResultScreen,
   Stage,
   StartGate,
-  useCountdown,
 } from "@/components/game-shell";
 import { Button, cx } from "@/components/ui";
 
@@ -33,10 +32,10 @@ export function MentalMathPlay() {
   const { state, status, start, pause, resume, reset, send } = useGameEngine(mentalMathEngine, settings);
 
   const beginCountdown = useCallback(() => setCounting(true), []);
-  const countdownValue = useCountdown(counting, 3, () => {
+  const onCountdownDone = useCallback(() => {
     setCounting(false);
     start();
-  });
+  }, [start]);
 
   const gradedRef = useRef(0);
   useEffect(() => {
@@ -208,7 +207,7 @@ export function MentalMathPlay() {
 
       <div className="relative flex min-h-0 flex-1 flex-col">
         {counting ? (
-          <Countdown value={countdownValue} />
+          <Countdown onDone={onCountdownDone} />
         ) : state ? (
           <Stage>
             <div

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { CASUAL_GAMES, GAME_BY_ID, TRAINING_GAMES } from "@/lib/games";
 import { useProfile, useSessions } from "@/lib/store/hooks";
 import { dayKey } from "@/lib/store/repository";
@@ -14,8 +15,10 @@ export function Dashboard() {
   const { sessions } = useSessions();
   const { streak, bests } = useProfile();
 
+  // Read the clock once, on mount, rather than on every render: a render is
+  // supposed to be a pure function of its inputs, and "today" is not one.
+  const [today] = useState(() => dayKey(Date.now()));
   const all = sessions ?? [];
-  const today = dayKey(Date.now());
   const todayCount = all.filter((s) => dayKey(s.startedAt) === today).length;
   const totalMinutes = Math.round(all.reduce((sum, s) => sum + s.durationMs, 0) / 60_000);
   const recent = all.slice(0, 5);

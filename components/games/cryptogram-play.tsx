@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useGameEngine } from "@/hooks/useGameEngine";
 import { useGameSettings } from "@/lib/store/hooks";
 import { GAME_BY_ID } from "@/lib/games";
@@ -24,11 +24,10 @@ export function CryptogramPlay() {
   const { settings, loaded } = useGameSettings<CryptogramConfig>("cryptogram", CRYPTOGRAM_DEFAULTS);
 
   // A daily puzzle is seeded from the date, so everyone gets the same one and
-  // reloading does not reroll it.
-  const seed = useMemo(
-    () => (settings.daily ? seedForDay(dayKey(Date.now())) : undefined),
-    [settings.daily],
-  );
+  // reloading does not reroll it. The clock is read once on mount — reading it
+  // during render would make the render impure.
+  const [todaySeed] = useState(() => seedForDay(dayKey(Date.now())));
+  const seed = settings.daily ? todaySeed : undefined;
 
   const { state, status, start, pause, resume, reset, send } = useGameEngine(cryptogramEngine, settings, { seed });
 
@@ -183,7 +182,7 @@ function Puzzle({ state, onSelect }: { state: CryptogramState; onSelect: (index:
   });
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto px-3 py-5 sm:px-6 sm:py-8">
+    <div className="flex min-h-0 flex-1 flex-col justify-center overflow-y-auto px-3 py-5 sm:px-6 sm:py-8">
       <div className="mx-auto flex max-w-3xl flex-wrap justify-center gap-x-3 gap-y-4">
         {words.map((word, wi) => (
           <div key={wi} className="flex gap-[3px]">

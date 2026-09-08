@@ -1,15 +1,20 @@
-import { dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-import { FlatCompat } from "@eslint/eslintrc";
+import coreWebVitals from "eslint-config-next/core-web-vitals";
+import typescript from "eslint-config-next/typescript";
 
-const compat = new FlatCompat({ baseDirectory: dirname(fileURLToPath(import.meta.url)) });
-
-export default [
+/**
+ * eslint-config-next 16 ships native flat configs, so these are spread
+ * directly rather than going through FlatCompat (which cannot serialise the
+ * plugin graph this config produces).
+ */
+const config = [
   { ignores: [".next/**", "node_modules/**", "test-results/**", "playwright-report/**"] },
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
+  ...coreWebVitals,
+  ...typescript,
   {
     rules: {
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
     },
   },
 ];
+
+export default config;

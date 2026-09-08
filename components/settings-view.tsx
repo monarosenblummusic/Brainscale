@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { store, isPersistent } from "@/lib/store/indexeddb";
 import type { ExportBundle } from "@/lib/store/repository";
 import { useSessions } from "@/lib/store/hooks";
@@ -14,13 +14,12 @@ export function SettingsView() {
   const { sessions, refresh } = useSessions();
   const [notice, setNotice] = useState<Notice>(null);
   const [confirmingReset, setConfirmingReset] = useState(false);
-  const [persistent, setPersistent] = useState(true);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    // Only meaningful once a read has actually been attempted.
-    if (sessions !== null) setPersistent(isPersistent());
-  }, [sessions]);
+  // Derived rather than mirrored into state: the store only knows whether it
+  // fell back to memory once a read has actually been attempted, which is
+  // exactly when `sessions` stops being null.
+  const persistent = sessions === null || isPersistent();
 
   const exportData = async () => {
     try {

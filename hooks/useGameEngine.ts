@@ -34,8 +34,16 @@ export function useGameEngine<C, S extends BaseState, R>(
   const pausedAtRef = useRef(0);
   const pausedTotalRef = useRef(0);
   const savedRef = useRef(false);
+
+  // The loop and the input handler need the *current* config without being
+  // re-created on every config change (which would cancel the rAF each time),
+  // so it is mirrored into a ref — from an effect, since writing a ref during
+  // render is not safe under concurrent rendering. A session only reads this at
+  // start(), which always follows a committed render, so it is never stale.
   const configRef = useRef(config);
-  configRef.current = config;
+  useEffect(() => {
+    configRef.current = config;
+  }, [config]);
 
   const commit = useCallback((next: S) => {
     stateRef.current = next;
@@ -66,6 +74,10 @@ export function useGameEngine<C, S extends BaseState, R>(
     [engine, onFinish, stopLoop],
   );
 
+  // The loop re-schedules itself, so it is reached through a ref rather than
+  // by referring to its own binding before it is initialised.
+  const loopRef = useRef<() => void>(() => {});
+
   const loop = useCallback(() => {
     const current = stateRef.current;
     if (!current) return;
@@ -78,8 +90,12 @@ export function useGameEngine<C, S extends BaseState, R>(
       finish(next);
       return;
     }
-    rafRef.current = requestAnimationFrame(loop);
+    rafRef.current = requestAnimationFrame(() => loopRef.current());
   }, [engine, commit, finish]);
+
+  useEffect(() => {
+    loopRef.current = loop;
+  }, [loop]);
 
   const start = useCallback(() => {
     unlockAudio();
@@ -97,7 +113,8 @@ export function useGameEngine<C, S extends BaseState, R>(
     playCue("start");
 
     stopLoop();
-    rafRef.current = requestAnimationFrame(loop);
+    loopRef.current = loop;
+    rafRef.current = requestAnimationFrame(() => loopRef.current());
   }, [engine, fixedSeed, commit, loop, stopLoop]);
 
   const pause = useCallback(() => {
@@ -112,8 +129,8 @@ export function useGameEngine<C, S extends BaseState, R>(
     if (status !== "paused") return;
     pausedTotalRef.current += performance.now() - pausedAtRef.current;
     setStatus("running");
-    rafRef.current = requestAnimationFrame(loop);
-  }, [status, loop]);
+    rafRef.current = requestAnimationFrame(() => loopRef.current());
+  }, [status]);
 
   const reset = useCallback(() => {
     stopLoop();

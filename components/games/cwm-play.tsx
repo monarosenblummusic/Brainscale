@@ -22,7 +22,6 @@ import {
   ResultScreen,
   Stage,
   StartGate,
-  useCountdown,
 } from "@/components/game-shell";
 import { Button, cx } from "@/components/ui";
 
@@ -107,10 +106,10 @@ export function CwmPlay() {
   const { state, status, start, pause, resume, reset, send } = useGameEngine(cwmEngine, settings);
 
   const beginCountdown = useCallback(() => setCounting(true), []);
-  const countdownValue = useCountdown(counting, 3, () => {
+  const onCountdownDone = useCallback(() => {
     setCounting(false);
     start();
-  });
+  }, [start]);
 
   const gradedRef = useRef(0);
   useEffect(() => {
@@ -237,7 +236,7 @@ export function CwmPlay() {
       />
 
       <div className="relative flex min-h-0 flex-1 flex-col">
-        {counting ? <Countdown value={countdownValue} /> : state ? <CwmStage state={state} onJudge={judge} onSelect={(i) => send({ kind: "select", index: i })} running={status === "running"} /> : null}
+        {counting ? <Countdown onDone={onCountdownDone} /> : state ? <CwmStage state={state} onJudge={judge} onSelect={(i) => send({ kind: "select", index: i })} running={status === "running"} /> : null}
 
         {status === "paused" ? <PauseOverlay game={GAME} onResume={resume} onRestart={again} /> : null}
       </div>

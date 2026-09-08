@@ -14,7 +14,6 @@ import {
   ResultScreen,
   Stage,
   StartGate,
-  useCountdown,
 } from "@/components/game-shell";
 import { cx } from "@/components/ui";
 
@@ -27,10 +26,10 @@ export function PasatPlay() {
   const { state, status, start, pause, resume, reset, send } = useGameEngine(pasatEngine, settings);
 
   const beginCountdown = useCallback(() => setCounting(true), []);
-  const countdownValue = useCountdown(counting, 3, () => {
+  const onCountdownDone = useCallback(() => {
     setCounting(false);
     start();
-  });
+  }, [start]);
 
   /* Speak each digit exactly once, on the digit the engine has moved to. */
   const spokenRef = useRef(-1);
@@ -181,7 +180,7 @@ export function PasatPlay() {
 
       <div className="relative flex min-h-0 flex-1 flex-col">
         {counting ? (
-          <Countdown value={countdownValue} />
+          <Countdown onDone={onCountdownDone} />
         ) : state ? (
           <Stage>
             {/* The two digits in play. The previous one is dimmed but shown in

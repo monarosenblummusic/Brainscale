@@ -20,7 +20,6 @@ import {
   ResultScreen,
   Stage,
   StartGate,
-  useCountdown,
 } from "@/components/game-shell";
 import { Button, cx } from "@/components/ui";
 import type { GameId, Session } from "@/lib/types";
@@ -57,10 +56,10 @@ export function SequencePlay({
   const { state, status, start, pause, resume, reset, send } = useGameEngine(sequenceEngine, settings, { onFinish });
 
   const beginCountdown = useCallback(() => setCounting(true), []);
-  const countdownValue = useCountdown(counting, 3, () => {
+  const onCountdownDone = useCallback(() => {
     setCounting(false);
     start();
-  });
+  }, [start]);
 
   /* Feedback cue on each graded trial, once per trial. */
   const gradedRef = useRef(0);
@@ -187,7 +186,7 @@ export function SequencePlay({
 
       <div className="relative flex min-h-0 flex-1 flex-col">
         {counting ? (
-          <Countdown value={countdownValue} />
+          <Countdown onDone={onCountdownDone} />
         ) : state ? (
           <Stage>
             <div className="flex h-7 items-center">

@@ -26,7 +26,21 @@ export function NBackGrid({
   const showPosition = modalities.includes("position");
 
   const fill = showColor && stimulus ? `var(${COLOR_VARS[stimulus.color % COLOR_VARS.length]})` : "var(--accent)";
-  const shape = showShape && stimulus ? SHAPES[stimulus.shape % SHAPES.length]! : "square";
+
+  /**
+   * Which glyph to draw.
+   *
+   * Shape only varies when shape is a channel the player is being asked about,
+   * or when colour is and they have asked for shape redundancy. Otherwise it
+   * stays a plain square: a mark that changes trial to trial for no scored
+   * reason is a distractor, and in dual mode it can even read as a fifth
+   * channel the player is failing to track.
+   */
+  const glyphFor = (s: TrialStimulus): string => {
+    if (showShape) return SHAPES[s.shape % SHAPES.length]!;
+    if (showColor && shapeRedundancy) return REDUNDANT_SHAPES[s.color % REDUNDANT_SHAPES.length]!;
+    return "square";
+  };
 
   // With position off there is nothing spatial to show, so the stimulus sits
   // in the centre cell and the grid lines come off.
@@ -50,14 +64,7 @@ export function NBackGrid({
                 : "border-transparent bg-transparent",
             )}
           >
-            {filled ? (
-              <StimulusMark
-                shape={showShape ? shape : "square"}
-                color={fill}
-                showShape={showShape || shapeRedundancy}
-                colorIndex={stimulus.color}
-              />
-            ) : null}
+            {filled ? <StimulusMark glyph={glyphFor(stimulus)} color={fill} /> : null}
           </div>
         );
       })}
@@ -65,21 +72,7 @@ export function NBackGrid({
   );
 }
 
-function StimulusMark({
-  shape,
-  color,
-  showShape,
-  colorIndex,
-}: {
-  shape: string;
-  color: string;
-  showShape: boolean;
-  colorIndex: number;
-}) {
-  // Shape redundancy: when the player has asked for it, colour is also carried
-  // by a distinct outline shape, so a colour-blind player is not guessing.
-  const glyph = showShape ? shape : REDUNDANT_SHAPES[colorIndex % REDUNDANT_SHAPES.length]!;
-
+function StimulusMark({ glyph, color }: { glyph: string; color: string }) {
   return (
     <div className="anim-flash absolute inset-0 grid place-items-center p-[8%]">
       <ShapeSvg name={glyph} color={color} />

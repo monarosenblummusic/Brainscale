@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Button, ButtonLink, cx } from "@/components/ui";
 import type { GameMeta } from "@/lib/types";
 
@@ -108,40 +108,48 @@ export function Stage({ children, className }: { children: ReactNode; className?
 
 /* ----------------------------------------------------------- Countdown */
 
-export function Countdown({ value }: { value: number }) {
-  return (
-    <div className="grid flex-1 place-items-center">
-      <div key={value} className="anim-flash tnum text-[clamp(4rem,20vw,9rem)] font-light tabular-nums text-[var(--accent)]">
-        {value > 0 ? value : "Go"}
-      </div>
-    </div>
-  );
-}
-
-/** Counts 3-2-1 then calls `onDone`. Kept out of engines: it is pure chrome. */
-export function useCountdown(active: boolean, from: number, onDone: () => void) {
+/**
+ * Counts down from `from`, then calls `onDone`. Kept out of the engines: it is
+ * pure chrome, and no engine should have to model "not started yet".
+ *
+ * Callers mount this only while the countdown is running, so its state
+ * initialises fresh on every run rather than being reset from inside an effect.
+ */
+export function Countdown({ from = 3, onDone }: { from?: number; onDone: () => void }) {
   const [value, setValue] = useState(from);
 
+  // Held in a ref so a caller passing an inline arrow does not restart the
+  // countdown on every render.
+  const onDoneRef = useRef(onDone);
   useEffect(() => {
-    if (!active) {
-      setValue(from);
-      return;
-    }
-    setValue(from);
+    onDoneRef.current = onDone;
+  }, [onDone]);
+
+  useEffect(() => {
     let n = from;
     const id = setInterval(() => {
       n -= 1;
       setValue(n);
       if (n < 0) {
         clearInterval(id);
-        onDone();
+        onDoneRef.current();
       }
     }, 700);
     return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, from]);
+  }, [from]);
 
-  return value;
+  return (
+    <div className="grid flex-1 place-items-center">
+      <div
+        key={value}
+        className="anim-flash tnum text-[clamp(4rem,20vw,9rem)] font-light tabular-nums text-[var(--accent)]"
+        role="status"
+        aria-live="assertive"
+      >
+        {value > 0 ? value : "Go"}
+      </div>
+    </div>
+  );
 }
 
 /* ----------------------------------------------------------- Pause menu */
