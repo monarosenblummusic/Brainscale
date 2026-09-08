@@ -206,6 +206,58 @@ describe("scoring", () => {
   });
 });
 
+describe("matches the figures BrainScale reports", () => {
+  // BrainScale's forum gives two checkable numbers. Their match rate produces
+  // "6 matches on each stimulus" at 24 trials, and a single mistake at dual
+  // 2-back scores 83% — where it used to score 92% before they changed it.
+  //
+  // 5/6 = 83.3% is the worse modality on its own; 11/12 = 91.7% is the two
+  // averaged. So the current site reports the weakest modality, and the old
+  // behaviour was the average. Anything that credited correct non-responses
+  // would put the same block at 98%, which matches neither figure.
+  const oneMissAtDual2Back = () => {
+    const config = cfg({ n: 2, modalities: ["position", "audio"], trialMs: 1000 });
+    let s = nbackEngine.init(config, 20260908);
+    const total = s.trials.length;
+    let skipped = false;
+
+    for (let i = 0; i < total; i++) {
+      s = nbackEngine.tick(s, i * 1000 + 10);
+      for (const m of ["position", "audio"] as const) {
+        if (!isTarget(s.trials, i, s.n, m)) continue;
+        // Miss exactly one target, on one modality only.
+        if (m === "position" && !skipped) {
+          skipped = true;
+          continue;
+        }
+        s = nbackEngine.input(s, { kind: "respond", channel: m });
+      }
+    }
+    return nbackEngine.tick(s, total * 1000 + 10);
+  };
+
+  it("gives 24 trials and 6 matches per modality at dual 2-back", () => {
+    const s = oneMissAtDual2Back();
+    expect(s.trials.length).toBe(24);
+    expect(s.scores.position.targets).toBe(6);
+    expect(s.scores.audio.targets).toBe(6);
+  });
+
+  it("scores one mistake at dual 2-back as 83%", () => {
+    const s = oneMissAtDual2Back();
+    expect(s.scores.position.hits).toBe(5);
+    expect(s.scores.audio.hits).toBe(6);
+    expect(Math.round(blockAccuracy(s, "standard") * 100)).toBe(83);
+  });
+
+  it("would have been 92% under the averaging BrainScale moved away from", () => {
+    const s = oneMissAtDual2Back();
+    const perModality = [channelAccuracy(s.scores.position), channelAccuracy(s.scores.audio)];
+    const mean = perModality.reduce((a, b) => a + b, 0) / perModality.length;
+    expect(Math.round(mean * 100)).toBe(92);
+  });
+});
+
 describe("adaptive outcome", () => {
   type Behaviour = "perfect" | "silent" | "spam";
 
@@ -308,7 +360,8 @@ describe("adaptive outcome", () => {
 
     expect(channelAccuracy(s.scores.position)).toBe(1);
     expect(blockAccuracy(s, "jaeggi")).toBe(channelAccuracy(s.scores.audio));
-    expect(blockAccuracy(s, "jaeggi")).toBeLessThan(blockAccuracy(s, "standard"));
+    // Brain Workshop pools instead, so a neglected channel is diluted there.
+    expect(blockAccuracy(s, "jaeggi")).toBeLessThan(blockAccuracy(s, "classic"));
   });
 });
 

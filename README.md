@@ -38,10 +38,19 @@ difficulty to how you actually perform.
 
   | Policy | Combines modalities by | Thresholds | False-alarm cap |
   | --- | --- | --- | --- |
-  | Standard | mean | 90 up / 70 down | 20% |
+  | Standard | weakest modality | 90 up / 70 down | 20% |
   | Jaeggi | weakest modality | 90 up / 75 down | 15% |
   | Brain Workshop | pooled | 80 up / 50 down ×3 | 25% |
   | Manual | pooled | never moves | — |
+
+  Standard reproduces the two figures BrainScale's forum reports. Their match
+  rate gives "6 matches on each stimulus" at 24 trials, and a single mistake at
+  dual 2-back scores **83%** there — which is 5/6, the worse modality alone. The
+  **92%** the same block used to score is 11/12, the two modalities averaged, so
+  the site moved from averaging to reporting the weakest channel. A formula that
+  credited correct non-responses would put that block at 98%, matching neither
+  number, which is how we know the score is taken over matches rather than over
+  all trials. Three tests pin these figures.
 
 - **CWM** — 8×8 symmetry judgement interleaved with a 4×4 cell to remember, 650 ms highlight / 500 ms blank,
   promoting after two consecutive perfect blocks.

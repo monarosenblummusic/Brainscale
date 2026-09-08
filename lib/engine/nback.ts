@@ -226,20 +226,13 @@ export function blockAccuracy(state: NBackState, policyId: AdaptivePolicyId): nu
   const scores = state.modalities.map((m) => state.scores[m]);
   if (scores.length === 0) return 0;
 
-  switch (policy.aggregate) {
-    // Pooled counts every target once, so a modality is not weighted by how
-    // few targets it happened to draw.
-    case "pooled":
-      return channelAccuracy(pool(scores));
-    // Jaeggi scores the weakest modality, so a strong visual channel cannot
-    // carry a neglected auditory one.
-    case "min":
-      return Math.min(...scores.map(channelAccuracy));
-    default: {
-      const values = scores.map(channelAccuracy);
-      return values.reduce((a, b) => a + b, 0) / values.length;
-    }
-  }
+  // Pooled counts every target once, so a modality is not weighted by how few
+  // targets it happened to draw. Min reports the worst modality, so a strong
+  // visual channel cannot carry a neglected auditory one — this is what
+  // BrainScale does, and averaging instead is what it moved away from.
+  return policy.aggregate === "pooled"
+    ? channelAccuracy(pool(scores))
+    : Math.min(...scores.map(channelAccuracy));
 }
 
 /**

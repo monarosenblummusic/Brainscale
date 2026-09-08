@@ -7,8 +7,16 @@
  */
 export type AdaptivePolicyId = "standard" | "jaeggi" | "classic" | "manual";
 
-/** How the per-modality scores combine into one block score. */
-export type Aggregation = "mean" | "min" | "pooled";
+/**
+ * How the per-modality scores combine into one block score.
+ *
+ * BrainScale takes the weakest modality. Its own forum records the switch: a
+ * single miss at dual 2-back used to score 92% and now scores 83%, which is
+ * exactly the difference between averaging the two modalities (11/12) and
+ * reporting the worse one (5/6), given the 6 matches per modality their match
+ * rate produces at 24 trials.
+ */
+export type Aggregation = "min" | "pooled";
 
 export interface AdaptivePolicy {
   id: AdaptivePolicyId;
@@ -37,19 +45,19 @@ export const POLICIES: Record<AdaptivePolicyId, AdaptivePolicy> = {
   standard: {
     id: "standard",
     name: "Standard",
-    description: "Catch 90% of the targets to advance; below 70% drops you back.",
+    description:
+      "BrainScale's progression: catch 90% of the targets to advance, below 70% drops you back, and you are scored on your weakest modality.",
     up: 0.9,
     down: 0.7,
     downStreak: 1,
-    aggregate: "mean",
+    aggregate: "min",
     maxFalseAlarmRate: 0.2,
-    scoreLabel: "average of modalities",
+    scoreLabel: "weakest modality",
   },
   jaeggi: {
     id: "jaeggi",
     name: "Jaeggi",
-    description:
-      "The 2008 protocol: 90% to advance, below 75% to drop, and you are scored on your weakest modality.",
+    description: "The 2008 protocol: same as Standard but stricter on the way down — below 75% drops you back.",
     up: 0.9,
     down: 0.75,
     downStreak: 1,
