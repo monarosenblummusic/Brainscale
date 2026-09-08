@@ -11,6 +11,8 @@ const PANELS: Partial<Record<GameId, React.ComponentType>> = {
   corsi: dynamic(() => import("@/components/games/corsi-settings").then((m) => m.CorsiSettings), { loading: skeleton }),
   "complex-working-memory": dynamic(() => import("@/components/games/cwm-settings").then((m) => m.CwmSettings), { loading: skeleton }),
   pasat: dynamic(() => import("@/components/games/pasat-settings").then((m) => m.PasatSettings), { loading: skeleton }),
+  "mental-math": dynamic(() => import("@/components/games/mental-math-settings").then((m) => m.MentalMathSettings), { loading: skeleton }),
+  cryptogram: dynamic(() => import("@/components/games/cryptogram-settings").then((m) => m.CryptogramSettings), { loading: skeleton }),
 };
 
 export function GameSettingsPanel({ gameId }: { gameId: GameId }) {
