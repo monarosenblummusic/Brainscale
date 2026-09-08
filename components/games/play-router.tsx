@@ -13,6 +13,8 @@ const loading = () => (
 
 const SCREENS: Partial<Record<GameId, React.ComponentType>> = {
   "n-back": dynamic(() => import("@/components/games/nback-play").then((m) => m.NBackPlay), { loading }),
+  "memory-span": dynamic(() => import("@/components/games/memory-span-play").then((m) => m.MemorySpanPlay), { loading }),
+  corsi: dynamic(() => import("@/components/games/corsi-play").then((m) => m.CorsiPlay), { loading }),
 };
 
 export function PlayRouter({ gameId }: { gameId: GameId }) {
