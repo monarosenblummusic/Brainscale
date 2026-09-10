@@ -22,6 +22,8 @@ const SCREENS: Partial<Record<GameId, React.ComponentType>> = {
   chalkboard: dynamic(() => import("@/components/games/chalkboard-play").then((m) => m.ChalkboardPlay), { loading }),
   "spatial-match": dynamic(() => import("@/components/games/spatial-match-play").then((m) => m.SpatialMatchPlay), { loading }),
   agility: dynamic(() => import("@/components/games/agility-play").then((m) => m.AgilityPlay), { loading }),
+  "double-decision": dynamic(() => import("@/components/games/double-decision-play").then((m) => m.DoubleDecisionPlay), { loading }),
+  hawkeye: dynamic(() => import("@/components/games/hawkeye-play").then((m) => m.HawkeyePlay), { loading }),
 };
 
 export function PlayRouter({ gameId }: { gameId: GameId }) {
