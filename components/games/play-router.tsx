@@ -25,6 +25,7 @@ const SCREENS: Partial<Record<GameId, React.ComponentType>> = {
   "double-decision": dynamic(() => import("@/components/games/double-decision-play").then((m) => m.DoubleDecisionPlay), { loading }),
   hawkeye: dynamic(() => import("@/components/games/hawkeye-play").then((m) => m.HawkeyePlay), { loading }),
   decoder: dynamic(() => import("@/components/games/decoder-play").then((m) => m.DecoderPlay), { loading }),
+  "perilous-path": dynamic(() => import("@/components/games/perilous-path-play").then((m) => m.PerilousPathPlay), { loading }),
 };
 
 export function PlayRouter({ gameId }: { gameId: GameId }) {
