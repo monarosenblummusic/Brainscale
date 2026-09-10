@@ -9,7 +9,6 @@ import {
   SPOKES,
   flashFieldEngine,
   type FlashFieldConfig,
-  type FlashFieldState,
 } from "@/lib/engine/flash-field";
 import { playCue } from "@/lib/audio";
 import { Countdown, Hud, PauseOverlay, PlayFrame, ResultScreen, StartGate } from "@/components/game-shell";

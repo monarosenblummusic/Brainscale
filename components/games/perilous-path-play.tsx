@@ -7,7 +7,6 @@ import { GAME_BY_ID } from "@/lib/games";
 import {
   PERILOUS_DEFAULTS,
   areAdjacent,
-  cellIndex,
   expectedRoute,
   indexToCell,
   perilousEngine,

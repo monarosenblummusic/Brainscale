@@ -28,8 +28,8 @@ export function Dashboard() {
       <header className="mb-9">
         <h1 className="text-[27px] font-semibold tracking-tight sm:text-3xl">Train your working memory</h1>
         <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-[var(--text-muted)]">
-          Seven exercises drawn from cognitive research, each one adapting to how you actually perform. Short
-          and frequent beats long and occasional — the streak is the point.
+          Seventeen exercises drawn from cognitive research, each one adapting to how you actually perform.
+          Short and frequent beats long and occasional — the streak is the point.
         </p>
       </header>
 

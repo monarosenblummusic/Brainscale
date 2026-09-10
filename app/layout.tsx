@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     template: "%s · BrainScale",
   },
   description:
-    "Free, science-backed brain training: dual n-back, complex working memory, memory span, Corsi block-tapping, PASAT, mental math and cryptograms. No account needed.",
+    "Free, science-backed brain training: dual n-back, working memory, processing speed, useful field of view, speed reading, logic and puzzles. Seventeen exercises, no account needed.",
   applicationName: "BrainScale",
 };
 

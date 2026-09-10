@@ -192,7 +192,7 @@ export const decoderEngine: Engine<DecoderConfig, DecoderState, DecoderResult> =
     const window = state.config.responseDigits;
     const missed = [...state.missed];
     let currentRun = state.currentRun;
-    let longestRun = state.longestRun;
+    const longestRun = state.longestRun;
 
     for (const target of state.targets) {
       if (target + window >= index) break;

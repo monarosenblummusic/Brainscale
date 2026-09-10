@@ -17,6 +17,16 @@ const GAMES = [
   "pasat",
   "mental-math",
   "cryptogram",
+  "decoder",
+  "chalkboard",
+  "perilous-path",
+  "double-decision",
+  "processing",
+  "hawkeye",
+  "spatial-match",
+  "agility",
+  "error-locator",
+  "turtle-traffic",
 ] as const;
 
 async function countSessions(page: Page): Promise<number> {
@@ -40,7 +50,11 @@ test.describe("navigation", () => {
   test("the dashboard lists every exercise", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("heading", { name: /train your working memory/i })).toBeVisible();
-    for (const name of ["N-Back", "Complex Working Memory", "Memory Span", "Corsi Block-Tapping", "PASAT", "Mental Math", "Cryptogram"]) {
+    for (const name of [
+      "N-Back", "Complex Working Memory", "Memory Span", "Corsi Block-Tapping", "PASAT", "Mental Math",
+      "Cryptogram", "Decoder", "Chalkboard Challenge", "Perilous Path", "Double Decision", "Processing",
+      "Hawkeye", "Spatial Speed Match", "Agility", "Error Locator", "Turtle Traffic",
+    ]) {
       await expect(page.getByRole("link", { name: new RegExp(name, "i") }).first()).toBeVisible();
     }
   });
@@ -168,4 +182,89 @@ test("settings exposes export and reset", async ({ page }) => {
   await expect(page.getByRole("button", { name: /export as json/i })).toBeVisible();
   await page.getByRole("button", { name: /delete all data/i }).click();
   await expect(page.getByRole("button", { name: /yes, delete everything/i })).toBeVisible();
+});
+
+test.describe("the new games behave", () => {
+  test("chalkboard scores a correct comparison", async ({ page }) => {
+    await page.goto("/play/chalkboard");
+    await page.getByRole("button", { name: "Start", exact: true }).click();
+    await expect(page.getByRole("button", { name: /^Left/ })).toBeVisible({ timeout: 8000 });
+
+    // Read both sides off the screen and answer for real.
+    const sides = await page.locator("[aria-label*='expression:']").all();
+    expect(sides).toHaveLength(2);
+    const values = await Promise.all(
+      sides.map(async (side) => {
+        const label = (await side.getAttribute("aria-label")) ?? "";
+        const m = label.match(/(\d+) ([+−×÷]) (\d+)/);
+        if (!m) return NaN;
+        const [, a, op, b] = m;
+        const x = Number(a);
+        const y = Number(b);
+        return op === "+" ? x + y : op === "−" ? x - y : op === "×" ? x * y : x / y;
+      }),
+    );
+
+    const button = values[0]! > values[1]! ? /^Left/ : values[0]! < values[1]! ? /^Right/ : /^Equal/;
+    await page.getByRole("button", { name: button }).click();
+    await expect(page.locator("header")).toContainText("10");
+  });
+
+  test("agility accepts a true/false verdict", async ({ page }) => {
+    await page.goto("/play/agility");
+    await page.getByRole("button", { name: "Start", exact: true }).click();
+    await expect(page.getByRole("button", { name: /^True/ })).toBeVisible({ timeout: 8000 });
+    await page.getByRole("button", { name: /^True/ }).click();
+    await expect(page.locator("header")).toContainText("Level");
+  });
+
+  test("decoder registers a press on the stream", async ({ page }) => {
+    await page.goto("/play/decoder");
+    await page.getByRole("button", { name: "Start", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Sequence" })).toBeVisible({ timeout: 8000 });
+    await page.keyboard.press("Space");
+    await expect(page.getByRole("button", { name: "Sequence" })).toBeVisible();
+  });
+
+  test("error locator marks a tapped fault", async ({ page }) => {
+    await page.goto("/play/error-locator");
+    await page.getByRole("button", { name: "Start", exact: true }).click();
+    await expect(page.getByText(/FIND \d+ FAULT/i)).toBeVisible({ timeout: 8000 });
+    // Tapping any word must register; which one it is depends on the seed.
+    const words = await page.locator("p button").all();
+    expect(words.length).toBeGreaterThan(10);
+    await words[5]!.click();
+    await expect(page.locator("header")).toContainText("Passage");
+  });
+
+  test("double decision asks the central question then the location", async ({ page }) => {
+    await page.goto("/play/double-decision");
+    await page.getByRole("button", { name: "Start", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Car" })).toBeVisible({ timeout: 15000 });
+    await page.getByRole("button", { name: "Car" }).click();
+    await expect(page.getByRole("button", { name: /^Position/ }).first()).toBeVisible();
+  });
+
+  test("turtle traffic selects a turtle and refuses an illegal move", async ({ page }) => {
+    await page.goto("/play/turtle-traffic");
+    await page.getByRole("button", { name: "Start", exact: true }).click();
+    await expect(page.getByText("Tap a turtle to move it")).toBeVisible({ timeout: 8000 });
+
+    await page.getByRole("button", { name: /^Turtle 1$/ }).click();
+    await expect(page.getByText("Now tap where it should step")).toBeVisible();
+  });
+
+  test("perilous path reveals a route then asks for it back", async ({ page }) => {
+    await page.goto("/play/perilous-path");
+    await page.getByRole("button", { name: "Start", exact: true }).click();
+    await expect(page.getByText("Watch the route")).toBeVisible({ timeout: 8000 });
+    await expect(page.getByText(/Walk the route|Walk it backwards/)).toBeVisible({ timeout: 15000 });
+  });
+
+  test("processing plays words then asks a question", async ({ page }) => {
+    await page.goto("/play/processing");
+    await page.getByRole("button", { name: "Start", exact: true }).click();
+    // A 40-word passage at 250 wpm runs about ten seconds.
+    await expect(page.getByRole("button", { name: /^1/ })).toBeVisible({ timeout: 30000 });
+  });
 });

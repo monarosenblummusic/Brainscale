@@ -14,7 +14,6 @@ import {
   buildTokens,
   errorLocatorEngine,
   type ErrorLocatorConfig,
-  type ErrorLocatorState,
 } from "@/lib/engine/error-locator";
 
 const rsvp = (over: Partial<RsvpConfig> = {}): RsvpConfig => ({ ...RSVP_DEFAULTS, ...over });

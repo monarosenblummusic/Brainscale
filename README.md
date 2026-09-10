@@ -1,6 +1,6 @@
 # BrainScale
 
-Seven brain-training exercises from the cognitive-psychology literature, implemented to their published
+Seventeen brain-training exercises from the cognitive-psychology literature, implemented to their published
 parameters and playable in the browser. No account, no server, no tracking — sessions live in your own
 browser's IndexedDB.
 
@@ -8,6 +8,8 @@ Built to mirror [brainscale.net](https://brainscale.net)'s exercise roster and i
 flow, with a cleaner visual layer.
 
 ## The exercises
+
+### Brain training — research paradigms
 
 | Exercise | What it trains | Origin |
 | --- | --- | --- |
@@ -17,6 +19,31 @@ flow, with a cleaner visual layer.
 | **Corsi Block-Tapping** | Visuospatial memory, sequencing | Corsi (1972) |
 | **PASAT** | Processing speed, sustained attention | Gronwall (1977) |
 | **Mental Math** | Numerical fluency, processing speed | Arithmetic fluency training |
+
+### Processing speed & attention
+
+| Exercise | What it trains | Origin |
+| --- | --- | --- |
+| **Decoder** | Sustained attention, vigilance | RVIP; Wesnes & Warburton (1984) |
+| **Chalkboard Challenge** | Quantitative reasoning under load | Quantitative comparison |
+| **Perilous Path** | Visuospatial memory, route planning | Spatial route learning |
+| **Double Decision** | Visual speed, useful field of view | UFOV; Ball & Owsley, ACTIVE trial |
+| **Processing** | Reading speed, semantic processing | RSVP; Forster (1970) |
+| **Hawkeye** | Peripheral awareness, visual span | Visual span training |
+| **Spatial Speed Match** | Spatial working memory, mental rotation | Speeded 1-back matching |
+
+### Logical agility & executive control
+
+| Exercise | What it trains | Origin |
+| --- | --- | --- |
+| **Agility** | Logical reasoning, bias suppression | Speeded verification |
+| **Error Locator** | Attention to detail, error monitoring | Proofreading tasks |
+| **Turtle Traffic** | Task switching, planning | Multi-target coordination |
+
+### Brain games
+
+| Exercise | What it trains | Origin |
+| --- | --- | --- |
 | **Cryptogram** | Logic, pattern recognition | Classic substitution puzzle |
 
 Each has an info page, most have an interactive tutorial, and all six training exercises adapt their
@@ -57,6 +84,13 @@ difficulty to how you actually perform.
 - **PASAT** — the standard 3.0 / 2.4 / 2.0 / 1.6 s ISI ladder over 61 digits.
 - **Mental Math** — difficulty is two independent operand digit-lengths, so your weak side does not hold the
   other back.
+- **Decoder** — digits 2-9 at 100 a minute, targets 2-4-6 / 3-5-7 / 4-6-8, with a two-digit response window.
+- **Double Decision & Hawkeye** — the exposure ladder floors at 16ms, well under the ~200ms a saccade needs.
+  Above that the player can simply look at the peripheral target and the task stops measuring field of view.
+- **Chalkboard Challenge** — the metered multiplier Lumosity documents: five correct fills the meter and
+  steps the multiplier up to a maximum of ten.
+- **Processing** — rate only rises on a correct comprehension answer, and the rate credited is the one just
+  read at rather than the one about to be set.
 
 ## Running it
 
@@ -69,8 +103,8 @@ npm run dev          # http://localhost:3000
 npm run build        # production build
 npm run typecheck    # tsc --noEmit
 npm run lint         # eslint
-npm test             # 145 engine unit tests (vitest)
-npm run e2e          # 23 browser smoke tests (playwright)
+npm test             # 271 engine unit tests (vitest)
+npm run e2e          # 51 browser tests (playwright)
 ```
 
 ## Deploying
@@ -102,19 +136,23 @@ n-back and PASAT the interval *is* the difficulty).
 Two consequences follow, and they are why seven games were tractable:
 
 1. HUD, countdown, pause, results and persistence are written **once**, in `components/game-shell/`.
-2. Every engine is testable headlessly against a fixed seed — no DOM, no fake timers. The 142 unit tests run
+2. Every engine is testable headlessly against a fixed seed — no DOM, no fake timers. The 271 unit tests run
    in about a second.
+
+Several engines are shared: one speed-trial engine drives Chalkboard Challenge, Spatial Speed Match and
+Agility; one flash-field engine drives Double Decision and Hawkeye; one sequence engine drives Memory Span
+and Corsi. Seventeen games run on eleven engines.
 
 ```
 app/
   (shell)/            dashboard, game info pages, tutorials, stats, settings
   play/[slug]/        the full-bleed play environment (no nav, no links out)
-lib/engine/           the seven state machines, plus rng / adaptive policies
+lib/engine/           the game state machines, plus rng / adaptive policies
 lib/audio/            speech synthesis, Web Audio tones, UI cues
 lib/store/            repository interfaces + an IndexedDB implementation
 components/game-shell/ HUD, Stage, Countdown, PauseOverlay, ResultScreen
-tests/engine/         142 unit tests
-tests/e2e/            23 Playwright smoke tests
+tests/engine/         271 unit tests
+tests/e2e/            51 Playwright tests
 ```
 
 ### Storage

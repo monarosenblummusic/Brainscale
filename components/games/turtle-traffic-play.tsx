@@ -8,7 +8,6 @@ import {
   TURTLE_DEFAULTS,
   indexToPoint,
   isAdjacent,
-  pointIndex,
   samePoint,
   turtleEngine,
   type TurtleConfig,
