@@ -1,14 +1,28 @@
 /** Identifiers for the seven exercises. Used as storage keys and route slugs. */
 export type GameId =
+  // Research paradigms
   | "n-back"
   | "complex-working-memory"
   | "memory-span"
   | "corsi"
   | "pasat"
   | "mental-math"
+  // Processing speed and attention
+  | "decoder"
+  | "chalkboard"
+  | "perilous-path"
+  | "double-decision"
+  | "processing"
+  | "hawkeye"
+  | "spatial-match"
+  // Logical agility and executive control
+  | "agility"
+  | "error-locator"
+  | "turtle-traffic"
+  // Untimed puzzles
   | "cryptogram";
 
-export type GameCategory = "training" | "game";
+export type GameCategory = "training" | "speed" | "logic" | "game";
 
 export interface GameMeta {
   id: GameId;

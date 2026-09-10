@@ -1,4 +1,4 @@
-import type { GameId, GameMeta } from "./types";
+import type { GameCategory, GameId, GameMeta } from "./types";
 
 /**
  * The exercise registry. Everything that enumerates games — the dashboard grid,
@@ -133,6 +133,216 @@ export const GAMES: GameMeta[] = [
     minutes: 5,
   },
   {
+    id: "decoder",
+    name: "Decoder",
+    tagline: "Spot the sequence hidden in the stream",
+    category: "speed",
+    trains: ["Sustained attention", "Working memory", "Vigilance"],
+    about:
+      "Digits arrive one after another, fast, and almost all of them are noise. Buried in the stream are three-digit runs that step up by two — 2-4-6, 3-5-7, 4-6-8 — and your job is to catch them as they complete. The difficulty is not any single digit; it is that nothing ever pauses, so you have to hold the last two while judging the next, for minutes at a stretch.",
+    how: [
+      "Digits from 2 to 9 appear one at a time, roughly a hundred a minute.",
+      "Watch for a run of three that climbs by two: 2-4-6, 3-5-7 or 4-6-8.",
+      "Respond as the third digit lands. You have a short window before it stops counting.",
+      "Most digits are noise. Responding to them costs you.",
+    ],
+    origin: "Rapid Visual Information Processing; Wesnes & Warburton (1984)",
+    metricLabel: "Sequences caught",
+    icon: "stream",
+    accentVar: "--stim-1",
+    hasTutorial: true,
+    minutes: 5,
+  },
+  {
+    id: "chalkboard",
+    name: "Chalkboard Challenge",
+    tagline: "Which side is worth more?",
+    category: "speed",
+    trains: ["Quantitative reasoning", "Working memory", "Processing speed"],
+    about:
+      "Two expressions, side by side. Pick the larger one — or call them equal. The trick is that you cannot evaluate both at once: you work out one side, hold that number while you work out the other, then compare. That hold-and-compare step is the whole exercise, and it is why the difficulty rises faster than the arithmetic alone would suggest.",
+    how: [
+      "Two expressions appear. Decide which has the greater value.",
+      "Tap that side, or tap Equal when they match.",
+      "A run of correct answers raises your multiplier; a wrong one knocks it back.",
+      "Answer before the timer runs out, and the timer keeps shortening.",
+    ],
+    origin: "Quantitative comparison, as popularised by Lumosity",
+    metricLabel: "Score",
+    icon: "scales",
+    accentVar: "--stim-2",
+    hasTutorial: false,
+    minutes: 4,
+  },
+  {
+    id: "perilous-path",
+    name: "Perilous Path",
+    tagline: "Retrace the route without hitting a hazard",
+    category: "speed",
+    trains: ["Visuospatial memory", "Route planning", "Inhibition"],
+    about:
+      "A path is drawn across a grid, and hazards are scattered around it. Both vanish. Now walk the route back from memory — and in reverse mode, walk it backwards, which means holding the whole route rather than following it a step at a time. The hazards are the cruel part: remembering where the path went is not enough if you cannot also remember what to avoid.",
+    how: [
+      "Watch the route light up square by square, and note the hazards.",
+      "Everything disappears.",
+      "Tap the squares of the route in order, moving one step at a time.",
+      "Step on a hazard and the run ends. Two failures at a length end the session.",
+    ],
+    origin: "Spatial route learning, in the tradition of the Austin Maze",
+    metricLabel: "Path length",
+    icon: "path",
+    accentVar: "--stim-3",
+    hasTutorial: true,
+    minutes: 6,
+  },
+  {
+    id: "double-decision",
+    name: "Double Decision",
+    tagline: "Name the centre, place the edge",
+    category: "speed",
+    trains: ["Visual processing speed", "Useful field of view", "Divided attention"],
+    about:
+      "Two things flash at once and both matter: a vehicle at the centre, and a road sign somewhere out at the edge. Report what the vehicle was and where the sign appeared. As you improve the flash gets shorter — down towards a couple of hundredths of a second — and the sign drifts further out, widening the region of vision your brain can actually use at a glance.",
+    how: [
+      "Fix your eyes on the centre of the screen and keep them there.",
+      "A vehicle flashes in the middle while a sign flashes out at the edge, among distractors.",
+      "Say which vehicle it was, then point to where the sign appeared.",
+      "Get both right and the next flash is shorter, and the sign moves further out.",
+    ],
+    origin: "Useful Field of View; Ball & Owsley, as used in the ACTIVE trial",
+    metricLabel: "Flash",
+    icon: "eye",
+    accentVar: "--stim-4",
+    hasTutorial: true,
+    minutes: 6,
+  },
+  {
+    id: "processing",
+    name: "Processing",
+    tagline: "Read faster than you can say the words",
+    category: "speed",
+    trains: ["Reading speed", "Semantic processing", "Comprehension"],
+    about:
+      "Words appear one at a time, in the same spot, faster than you could read them aloud. Above roughly 300 words a minute the inner voice most people read with simply cannot keep up, and the only way through is to take meaning straight from the word. Then you answer a question about what you read, which is what stops the exercise becoming a staring contest.",
+    how: [
+      "A passage plays one word at a time, in place.",
+      "Do not try to sound the words out — let them land.",
+      "Answer a question about what you just read.",
+      "Answer correctly and the next passage runs faster.",
+    ],
+    origin: "Rapid serial visual presentation; Forster (1970)",
+    metricLabel: "Words per minute",
+    icon: "text",
+    accentVar: "--stim-5",
+    hasTutorial: false,
+    minutes: 5,
+  },
+  {
+    id: "hawkeye",
+    name: "Hawkeye",
+    tagline: "Where were the birds?",
+    category: "speed",
+    trains: ["Peripheral awareness", "Visual span", "Spatial attention"],
+    about:
+      "Birds flash across a wide field for a fraction of a second, then vanish. Mark where they were. Because the flash is far too brief to look around in, you cannot search — you have to take the whole field in at once. Training that habit widens how much of a scene you register from a single glance.",
+    how: [
+      "Keep your eyes on the centre mark.",
+      "Several birds flash at once, scattered across the field.",
+      "Tap every place you saw one.",
+      "Get them all and the next flash is shorter and the field wider.",
+    ],
+    origin: "Visual span and peripheral localisation training",
+    metricLabel: "Flash",
+    icon: "bird",
+    accentVar: "--stim-6",
+    hasTutorial: false,
+    minutes: 5,
+  },
+  {
+    id: "spatial-match",
+    name: "Spatial Speed Match",
+    tagline: "Same shape, same way up?",
+    category: "speed",
+    trains: ["Spatial working memory", "Mental rotation", "Processing speed"],
+    about:
+      "Each shape has to be compared against the one immediately before it — same form, same orientation, same cell. Since the comparison target is always the thing that just left the screen, you are constantly replacing what you hold. It is the lightest possible version of the n-back idea, run at speed rather than depth.",
+    how: [
+      "A shape appears in a cell, at some rotation.",
+      "Decide whether it matches the shape shown just before it — form, rotation and position all have to agree.",
+      "Answer yes or no before the next one arrives.",
+      "The first shape of a round has nothing to compare against.",
+    ],
+    origin: "Speeded 1-back matching, as popularised by Lumosity",
+    metricLabel: "Score",
+    icon: "rotate",
+    accentVar: "--stim-1",
+    hasTutorial: false,
+    minutes: 3,
+  },
+  {
+    id: "agility",
+    name: "Agility",
+    tagline: "Is the statement actually true?",
+    category: "logic",
+    trains: ["Logical reasoning", "Bias suppression", "Processing speed"],
+    about:
+      "A comparative claim or a small algebraic statement appears, and you have moments to say whether it holds. Some are straightforward. Others are phrased to invite the wrong answer — a negation buried mid-sentence, or an ordering that reads naturally but is false. Beating those means reading what is written rather than what you expected.",
+    how: [
+      "A statement appears — a comparison, an ordering, or a small equation.",
+      "Decide whether it is true or false.",
+      "Answer before the bar empties.",
+      "Correct answers shorten the bar for the next one.",
+    ],
+    origin: "Speeded verification, in the tradition of grammatical reasoning tests",
+    metricLabel: "Score",
+    icon: "logic",
+    accentVar: "--stim-3",
+    hasTutorial: false,
+    minutes: 4,
+  },
+  {
+    id: "error-locator",
+    name: "Error Locator",
+    tagline: "Find every mistake in the passage",
+    category: "logic",
+    trains: ["Attention to detail", "Error monitoring", "Reading"],
+    about:
+      "A short passage with faults planted in it — a doubled word, a misspelling, a sentence that never got its full stop. Tap each one. Reading for meaning actively works against you here, because comprehension smooths over exactly the kind of small breakage you are hunting for; you have to read the surface instead.",
+    how: [
+      "A passage appears with several faults planted in it.",
+      "Tap every word that is wrong.",
+      "Faults are doubled words, misspellings, and missing or wrong punctuation.",
+      "Tapping a word that is fine costs you, so read before you tap.",
+    ],
+    origin: "Proofreading and error-detection tasks",
+    metricLabel: "Faults found",
+    icon: "magnifier",
+    accentVar: "--stim-4",
+    hasTutorial: false,
+    minutes: 5,
+  },
+  {
+    id: "turtle-traffic",
+    name: "Turtle Traffic",
+    tagline: "Steer several at once, without collisions",
+    category: "logic",
+    trains: ["Task switching", "Planning", "Divided attention"],
+    about:
+      "Several turtles, several destinations, one grid. Each moves only when you send it, so the work is deciding who to move and when — and keeping the others in mind while you deal with one. Routes cross. Two turtles arriving at the same square at the same moment is a collision, so a plan that ignores the others is not a plan.",
+    how: [
+      "Each turtle has a matching destination somewhere on the grid.",
+      "Tap a turtle to select it, then tap where it should step.",
+      "Turtles move one square at a time, and never through rocks or each other.",
+      "Get them all home before the clock runs out.",
+    ],
+    origin: "Multi-target coordination and planning",
+    metricLabel: "Turtles home",
+    icon: "turtle",
+    accentVar: "--stim-6",
+    hasTutorial: false,
+    minutes: 6,
+  },
+  {
     id: "cryptogram",
     name: "Cryptogram",
     tagline: "Decode a famous quote from a number cipher",
@@ -159,8 +369,30 @@ export const GAME_BY_ID: Record<GameId, GameMeta> = Object.fromEntries(
   GAMES.map((g) => [g.id, g]),
 ) as Record<GameId, GameMeta>;
 
-export const TRAINING_GAMES = GAMES.filter((g) => g.category === "training");
-export const CASUAL_GAMES = GAMES.filter((g) => g.category === "game");
+export const byCategory = (category: GameCategory) => GAMES.filter((g) => g.category === category);
+
+/** The dashboard and the sidebar both read this, so the two never drift apart. */
+export const GAME_SECTIONS: { category: GameCategory; title: string; hint: string }[] = [
+  {
+    category: "training",
+    title: "Brain training",
+    hint: "Research paradigms — difficulty follows your performance",
+  },
+  {
+    category: "speed",
+    title: "Processing speed & attention",
+    hint: "Fast, timed, and unforgiving of a wandering eye",
+  },
+  {
+    category: "logic",
+    title: "Logical agility & executive control",
+    hint: "Switching rules, catching errors, holding a plan",
+  },
+  { category: "game", title: "Brain games", hint: "Untimed — think rather than react" },
+];
+
+export const TRAINING_GAMES = byCategory("training");
+export const CASUAL_GAMES = byCategory("game");
 
 export function isGameId(value: string): value is GameId {
   return value in GAME_BY_ID;

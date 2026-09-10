@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CASUAL_GAMES, GAME_BY_ID, TRAINING_GAMES } from "@/lib/games";
+import { GAME_SECTIONS, GAME_BY_ID, byCategory } from "@/lib/games";
 import { useProfile, useSessions } from "@/lib/store/hooks";
 import { dayKey } from "@/lib/store/repository";
 import { GameCard } from "@/components/game-card";
@@ -69,23 +69,20 @@ export function Dashboard() {
         ) : null}
       </Card>
 
-      <section className="mb-9">
-        <SectionTitle hint="Adaptive — difficulty follows your performance">Brain training</SectionTitle>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {TRAINING_GAMES.map((g) => (
-            <GameCard key={g.id} game={g} best={bests?.[g.id]} />
-          ))}
-        </div>
-      </section>
-
-      <section className="mb-9">
-        <SectionTitle hint="Untimed — think rather than react">Brain games</SectionTitle>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {CASUAL_GAMES.map((g) => (
-            <GameCard key={g.id} game={g} best={bests?.[g.id]} />
-          ))}
-        </div>
-      </section>
+      {GAME_SECTIONS.map((section) => {
+        const games = byCategory(section.category);
+        if (games.length === 0) return null;
+        return (
+          <section key={section.category} className="mb-9">
+            <SectionTitle hint={section.hint}>{section.title}</SectionTitle>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {games.map((g) => (
+                <GameCard key={g.id} game={g} best={bests?.[g.id]} />
+              ))}
+            </div>
+          </section>
+        );
+      })}
 
       {recent.length > 0 ? (
         <section>

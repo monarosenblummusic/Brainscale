@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { CASUAL_GAMES, TRAINING_GAMES } from "@/lib/games";
+import { GAME_SECTIONS, byCategory } from "@/lib/games";
 import { GameIcon } from "@/components/ui/icons";
 import { ThemeToggle } from "@/components/ui/theme";
 import { cx } from "@/components/ui";
@@ -63,23 +63,20 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
         {LINKS.map((l) => item(l.href, l.label, <NavIcon name={l.icon} />, isActive(l.href)))}
       </div>
 
-      <div className="flex flex-col gap-0.5">
-        <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-faint)]">
-          Brain training
-        </p>
-        {TRAINING_GAMES.map((g) =>
-          item(`/games/${g.id}`, g.name, <GameIcon name={g.icon} className="size-[18px]" />, isActive(`/games/${g.id}`)),
-        )}
-      </div>
-
-      <div className="flex flex-col gap-0.5">
-        <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-faint)]">
-          Brain games
-        </p>
-        {CASUAL_GAMES.map((g) =>
-          item(`/games/${g.id}`, g.name, <GameIcon name={g.icon} className="size-[18px]" />, isActive(`/games/${g.id}`)),
-        )}
-      </div>
+      {GAME_SECTIONS.map((section) => {
+        const games = byCategory(section.category);
+        if (games.length === 0) return null;
+        return (
+          <div key={section.category} className="flex flex-col gap-0.5">
+            <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-faint)]">
+              {section.title}
+            </p>
+            {games.map((g) =>
+              item(`/games/${g.id}`, g.name, <GameIcon name={g.icon} className="size-[18px]" />, isActive(`/games/${g.id}`)),
+            )}
+          </div>
+        );
+      })}
     </nav>
   );
 }
