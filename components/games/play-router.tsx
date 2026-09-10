@@ -11,7 +11,7 @@ const loading = () => (
   <div className="grid h-dvh place-items-center text-[13px] text-[var(--text-faint)]">Loading…</div>
 );
 
-const SCREENS: Partial<Record<GameId, React.ComponentType>> = {
+const SCREENS: Record<GameId, React.ComponentType> = {
   "n-back": dynamic(() => import("@/components/games/nback-play").then((m) => m.NBackPlay), { loading }),
   "memory-span": dynamic(() => import("@/components/games/memory-span-play").then((m) => m.MemorySpanPlay), { loading }),
   corsi: dynamic(() => import("@/components/games/corsi-play").then((m) => m.CorsiPlay), { loading }),
@@ -28,9 +28,10 @@ const SCREENS: Partial<Record<GameId, React.ComponentType>> = {
   "perilous-path": dynamic(() => import("@/components/games/perilous-path-play").then((m) => m.PerilousPathPlay), { loading }),
   processing: dynamic(() => import("@/components/games/processing-play").then((m) => m.ProcessingPlay), { loading }),
   "error-locator": dynamic(() => import("@/components/games/error-locator-play").then((m) => m.ErrorLocatorPlay), { loading }),
+  "turtle-traffic": dynamic(() => import("@/components/games/turtle-traffic-play").then((m) => m.TurtleTrafficPlay), { loading }),
 };
 
 export function PlayRouter({ gameId }: { gameId: GameId }) {
   const Screen = SCREENS[gameId];
-  return Screen ? <Screen /> : null;
+  return <Screen />;
 }
