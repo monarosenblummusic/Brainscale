@@ -26,6 +26,8 @@ const SCREENS: Partial<Record<GameId, React.ComponentType>> = {
   hawkeye: dynamic(() => import("@/components/games/hawkeye-play").then((m) => m.HawkeyePlay), { loading }),
   decoder: dynamic(() => import("@/components/games/decoder-play").then((m) => m.DecoderPlay), { loading }),
   "perilous-path": dynamic(() => import("@/components/games/perilous-path-play").then((m) => m.PerilousPathPlay), { loading }),
+  processing: dynamic(() => import("@/components/games/processing-play").then((m) => m.ProcessingPlay), { loading }),
+  "error-locator": dynamic(() => import("@/components/games/error-locator-play").then((m) => m.ErrorLocatorPlay), { loading }),
 };
 
 export function PlayRouter({ gameId }: { gameId: GameId }) {
