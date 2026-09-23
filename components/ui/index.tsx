@@ -13,14 +13,14 @@ type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 type ButtonSize = "sm" | "md" | "lg";
 
 const BUTTON_BASE =
-  "inline-flex items-center justify-center gap-2 rounded-xl font-medium transition-all " +
-  "disabled:pointer-events-none disabled:opacity-45 active:scale-[0.98] select-none";
+  "inline-flex items-center justify-center gap-2 rounded-xl font-medium tracking-tight transition-all " +
+  "disabled:pointer-events-none disabled:opacity-45 active:scale-[0.98] select-none cursor-pointer";
 
 const BUTTON_VARIANT: Record<ButtonVariant, string> = {
   primary:
-    "bg-[var(--accent)] text-[var(--accent-text)] shadow-[var(--shadow-sm)] hover:bg-[var(--accent-hover)]",
+    "bg-gradient-to-b from-[var(--accent)] to-[var(--accent-deep)] text-[var(--accent-text)] shadow-[var(--shadow-glow)] hover:brightness-110",
   secondary:
-    "bg-[var(--surface)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--border-strong)] hover:bg-[var(--bg-subtle)]",
+    "bg-[var(--surface-raised)] text-[var(--text)] border border-[var(--border)] shadow-[var(--shadow-sm)] hover:border-[var(--border-strong)] hover:bg-[var(--surface)]",
   ghost: "text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text)]",
   danger: "bg-[var(--danger)] text-white hover:opacity-90",
 };
@@ -55,7 +55,7 @@ export function Card({ className, ...props }: ComponentProps<"div">) {
   return (
     <div
       className={cx(
-        "rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-sm)]",
+        "rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow)]",
         className,
       )}
       {...props}
@@ -66,7 +66,7 @@ export function Card({ className, ...props }: ComponentProps<"div">) {
 export function SectionTitle({ children, hint }: { children: ReactNode; hint?: ReactNode }) {
   return (
     <div className="mb-4 flex items-baseline justify-between gap-4">
-      <h2 className="text-[15px] font-semibold tracking-tight">{children}</h2>
+      <h2 className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">{children}</h2>
       {hint ? <span className="text-[13px] text-[var(--text-faint)]">{hint}</span> : null}
     </div>
   );
@@ -201,21 +201,37 @@ export function Toggle({
 export function Stat({ label, value, sub }: { label: string; value: ReactNode; sub?: ReactNode }) {
   return (
     <div>
-      <div className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-faint)]">{label}</div>
-      <div className="tnum mt-1 text-2xl font-semibold tracking-tight">{value}</div>
+      <div className="text-[11px] font-medium uppercase tracking-[0.12em] text-[var(--text-faint)]">{label}</div>
+      <div className="tnum mt-1 bg-gradient-to-b from-[var(--text)] to-[var(--text-muted)] bg-clip-text text-2xl font-semibold tracking-tight text-transparent">
+        {value}
+      </div>
       {sub ? <div className="mt-0.5 text-[13px] text-[var(--text-muted)]">{sub}</div> : null}
     </div>
   );
 }
 
-export function Badge({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | "accent" | "success" }) {
+export function Badge({
+  children,
+  tone = "neutral",
+  className,
+}: {
+  children: ReactNode;
+  tone?: "neutral" | "accent" | "success";
+  className?: string;
+}) {
   const tones = {
-    neutral: "bg-[var(--bg-subtle)] text-[var(--text-muted)]",
-    accent: "bg-[var(--accent-soft)] text-[var(--accent)]",
-    success: "bg-[var(--success-soft)] text-[var(--success)]",
+    neutral: "border-[var(--border)] bg-[var(--bg-subtle)] text-[var(--text-muted)]",
+    accent: "border-[var(--accent-ring)] bg-[var(--accent-soft)] text-[var(--accent)]",
+    success: "border-[var(--border-strong)] bg-[var(--success-soft)] text-[var(--success)]",
   };
   return (
-    <span className={cx("inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-medium", tones[tone])}>
+    <span
+      className={cx(
+        "inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium tracking-wide",
+        tones[tone],
+        className,
+      )}
+    >
       {children}
     </span>
   );
