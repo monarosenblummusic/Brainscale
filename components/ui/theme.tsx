@@ -32,12 +32,12 @@ function getSnapshot(): Theme {
   } catch {
     /* storage blocked — fall through to the default */
   }
-  return "system";
+  return "dark";
 }
 
-/** Server and first client render agree on "system", so hydration is stable. */
+/** Server and first client render agree on "dark", so hydration is stable. */
 function getServerSnapshot(): Theme {
-  return "system";
+  return "dark";
 }
 
 function write(theme: Theme) {
@@ -65,7 +65,7 @@ export const useTheme = () => useContext(ThemeContext);
  */
 export const themeScript = `
 (function(){try{
-  var t=localStorage.getItem('${STORAGE_KEY}')||'system';
+  var t=localStorage.getItem('${STORAGE_KEY}')||'dark';
   if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);
 }catch(e){}})();
 `;
@@ -80,7 +80,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  const order: Theme[] = ["system", "light", "dark"];
+  const order: Theme[] = ["dark", "light", "system"];
   const label = { system: "System theme", light: "Light theme", dark: "Dark theme" }[theme];
 
   return (

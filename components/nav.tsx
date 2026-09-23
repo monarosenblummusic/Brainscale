@@ -23,14 +23,16 @@ function NavIcon({ name }: { name: string }) {
 
 function Brand() {
   return (
-    <Link href="/" className="flex items-center gap-2.5 font-semibold tracking-tight">
-      <span className="grid size-8 place-items-center rounded-lg bg-[var(--accent)] text-[var(--accent-text)]">
+    <Link href="/" className="group flex items-center gap-2.5 font-semibold tracking-tight">
+      <span className="grid size-8 place-items-center rounded-xl bg-gradient-to-br from-[var(--accent)] to-[var(--accent-deep)] text-white shadow-[var(--shadow-glow)] transition-transform group-hover:scale-105">
         <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M12 5a3 3 0 0 0-3 3 3 3 0 0 0-1 5.8A3 3 0 0 0 12 19a3 3 0 0 0 4-5.2A3 3 0 0 0 15 8a3 3 0 0 0-3-3Z" />
           <path d="M12 5v14" />
         </svg>
       </span>
-      <span className="text-[15px]">BrainScale</span>
+      <span className="bg-gradient-to-b from-[var(--text)] to-[var(--text-muted)] bg-clip-text text-[15px] text-transparent">
+        BrainScale
+      </span>
     </Link>
   );
 }
@@ -46,9 +48,9 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
       onClick={onNavigate}
       aria-current={active ? "page" : undefined}
       className={cx(
-        "flex items-center gap-3 rounded-lg px-3 py-2 text-[13.5px] transition",
+        "flex items-center gap-3 rounded-xl px-3 py-2 text-[13.5px] transition-all",
         active
-          ? "bg-[var(--accent-soft)] font-medium text-[var(--accent)]"
+          ? "bg-[var(--accent-soft)] font-medium text-[var(--accent)] shadow-[inset_0_0_0_1px_var(--accent-ring),0_2px_12px_oklch(72%_0.18_287/0.12)]"
           : "text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text)]",
       )}
     >
